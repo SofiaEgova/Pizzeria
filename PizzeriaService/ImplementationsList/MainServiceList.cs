@@ -21,68 +21,32 @@ namespace PizzeriaService.ImplementationsList
 
         public List<OrderPizzaViewModel> GetList()
         {
-            List<OrderPizzaViewModel> result = new List<OrderPizzaViewModel>();
-            for (int i = 0; i < source.OrderPizzas.Count; ++i)
-            {
-                string visitorFIO = string.Empty;
-                for (int j = 0; j < source.Visitors.Count; ++j)
+            List<OrderPizzaViewModel> result = source.OrderPizzas
+                .Select(rec => new OrderPizzaViewModel
                 {
-                    if (source.Visitors[j].Id == source.OrderPizzas[i].VisitorId)
-                    {
-                        visitorFIO = source.Visitors[j].VisitorFIO;
-                        break;
-                    }
-                }
-                string pizzaName = string.Empty;
-                for (int j = 0; j < source.Pizzas.Count; ++j)
-                {
-                    if (source.Pizzas[j].Id == source.OrderPizzas[i].PizzaId)
-                    {
-                        pizzaName = source.Pizzas[j].PizzaName;
-                        break;
-                    }
-                }
-                string cookFIO = string.Empty;
-                if (source.OrderPizzas[i].CookId.HasValue)
-                {
-                    for (int j = 0; j < source.Cooks.Count; ++j)
-                    {
-                        if (source.Cooks[j].Id == source.OrderPizzas[i].CookId.Value)
-                        {
-                            cookFIO = source.Cooks[j].CookFIO;
-                            break;
-                        }
-                    }
-                }
-                result.Add(new OrderPizzaViewModel
-                {
-                    Id = source.OrderPizzas[i].Id,
-                    VisitorId = source.OrderPizzas[i].VisitorId,
-                    VisitorFIO = visitorFIO,
-                    PizzaId = source.OrderPizzas[i].PizzaId,
-                    PizzaName = pizzaName,
-                    CookId = source.OrderPizzas[i].CookId,
-                    CookName = cookFIO,
-                    Count = source.OrderPizzas[i].Count,
-                    Sum = source.OrderPizzas[i].Sum,
-                    TimeCreate = source.OrderPizzas[i].TimeCreate.ToLongDateString(),
-                    TimeDone = source.OrderPizzas[i].TimeDone?.ToLongDateString(),
-                    Status = source.OrderPizzas[i].Status.ToString()
-                });
-            }
+                    Id = rec.Id,
+                    VisitorId = rec.VisitorId,
+                    PizzaId = rec.PizzaId,
+                    CookId = rec.CookId,
+                    TimeCreate = rec.TimeCreate.ToLongDateString(),
+                    TimeDone = rec.TimeDone?.ToLongDateString(),
+                    Status = rec.Status.ToString(),
+                    Count = rec.Count,
+                    Sum = rec.Sum,
+                    VisitorFIO = source.Visitors
+                                    .FirstOrDefault(recC => recC.Id == rec.VisitorId)?.VisitorFIO,
+                    PizzaName = source.Pizzas
+                                    .FirstOrDefault(recP => recP.Id == rec.PizzaId)?.PizzaName,
+                    CookName = source.Cooks
+                                    .FirstOrDefault(recI => recI.Id == rec.CookId)?.CookFIO
+                })
+                .ToList();
             return result;
         }
 
         public void CreateOrderPizza(OrderPizzaBindingModel model)
         {
-            int maxId = 0;
-            for (int i = 0; i < source.OrderPizzas.Count; ++i)
-            {
-                if (source.OrderPizzas[i].Id > maxId)
-                {
-                    maxId = source.Visitors[i].Id;
-                }
-            }
+            int maxId = source.OrderPizzas.Count > 0 ? source.OrderPizzas.Max(rec => rec.Id) : 0;
             source.OrderPizzas.Add(new OrderPizza
             {
                 Id = maxId + 1,
@@ -97,134 +61,92 @@ namespace PizzeriaService.ImplementationsList
 
         public void TakeOrderPizzaInWork(OrderPizzaBindingModel model)
         {
-            int index = -1;
-            for (int i = 0; i < source.OrderPizzas.Count; ++i)
-            {
-                if (source.OrderPizzas[i].Id == model.Id)
-                {
-                    index = i;
-                    break;
-                }
-            }
-            if (index == -1)
+            OrderPizza element = source.OrderPizzas.FirstOrDefault(rec => rec.Id == model.Id);
+            if (element == null)
             {
                 throw new Exception("Элемент не найден");
             }
             // смотрим по количеству компонентов на складах
-            for (int i = 0; i < source.PizzaIngredients.Count; ++i)
+            var PizzaIngredients = source.PizzaIngredients.Where(rec => rec.PizzaId == element.PizzaId);
+            foreach (var PizzaIngredient in PizzaIngredients)
             {
-                if (source.PizzaIngredients[i].PizzaId == source.OrderPizzas[index].PizzaId)
+                int countOnFridges = source.FridgeIngredients
+                                            .Where(rec => rec.IngredientId == PizzaIngredient.IngredientId)
+                                            .Sum(rec => rec.Count);
+                if (countOnFridges < PizzaIngredient.Count * element.Count)
                 {
-                    int countOnStocks = 0;
-                    for (int j = 0; j < source.FridgeIngredients.Count; ++j)
-                    {
-                        if (source.FridgeIngredients[j].IngredientId == source.PizzaIngredients[i].IngredientId)
-                        {
-                            countOnStocks += source.FridgeIngredients[j].Count;
-                        }
-                    }
-                    if (countOnStocks < source.PizzaIngredients[i].Count * source.OrderPizzas[index].Count)
-                    {
-                        for (int j = 0; j < source.Ingredients.Count; ++j)
-                        {
-                            if (source.Ingredients[j].Id == source.PizzaIngredients[i].IngredientId)
-                            {
-                                throw new Exception("Не достаточно компонента " + source.Ingredients[j].IngredientName +
-                                    " требуется " + source.PizzaIngredients[i].Count + ", в наличии " + countOnStocks);
-                            }
-                        }
-                    }
+                    var IngredientName = source.Ingredients
+                                    .FirstOrDefault(rec => rec.Id == PizzaIngredient.IngredientId);
+                    throw new Exception("Не достаточно компонента " + IngredientName?.IngredientName +
+                        " требуется " + PizzaIngredient.Count + ", в наличии " + countOnFridges);
                 }
             }
             // списываем
-            for (int i = 0; i < source.PizzaIngredients.Count; ++i)
+            foreach (var PizzaIngredient in PizzaIngredients)
             {
-                if (source.PizzaIngredients[i].PizzaId == source.OrderPizzas[index].PizzaId)
+                int countOnFridges = PizzaIngredient.Count * element.Count;
+                var FridgeIngredients = source.FridgeIngredients
+                                            .Where(rec => rec.IngredientId == PizzaIngredient.IngredientId);
+                foreach (var FridgeIngredient in FridgeIngredients)
                 {
-                    int countOnStocks = source.PizzaIngredients[i].Count * source.OrderPizzas[index].Count;
-                    for (int j = 0; j < source.FridgeIngredients.Count; ++j)
+                    // компонентов на одном слкаде может не хватать
+                    if (FridgeIngredient.Count >= countOnFridges)
                     {
-                        if (source.FridgeIngredients[j].IngredientId == source.PizzaIngredients[i].IngredientId)
-                        {
-                            // компонентов на одном слкаде может не хватать
-                            if (source.FridgeIngredients[j].Count >= countOnStocks)
-                            {
-                                source.FridgeIngredients[j].Count -= countOnStocks;
-                                break;
-                            }
-                            else
-                            {
-                                countOnStocks -= source.FridgeIngredients[j].Count;
-                                source.FridgeIngredients[j].Count = 0;
-                            }
-                        }
+                        FridgeIngredient.Count -= countOnFridges;
+                        break;
+                    }
+                    else
+                    {
+                        countOnFridges -= FridgeIngredient.Count;
+                        FridgeIngredient.Count = 0;
                     }
                 }
             }
-            source.OrderPizzas[index].CookId = model.CookId;
-            source.OrderPizzas[index].TimeDone = DateTime.Now;
-            source.OrderPizzas[index].Status = OrderPizzaStatus.Выполняется;
+            element.CookId = model.CookId;
+            element.TimeDone = DateTime.Now;
+            element.Status = OrderPizzaStatus.Выполняется;
         }
 
         public void FinishOrderPizza(int id)
         {
-            int index = -1;
-            for (int i = 0; i < source.OrderPizzas.Count; ++i)
-            {
-                if (source.Visitors[i].Id == id)
-                {
-                    index = i;
-                    break;
-                }
-            }
-            if (index == -1)
+            OrderPizza element = source.OrderPizzas.FirstOrDefault(rec => rec.Id == id);
+            if (element == null)
             {
                 throw new Exception("Элемент не найден");
             }
-            source.OrderPizzas[index].Status = OrderPizzaStatus.Готов;
+            element.Status = OrderPizzaStatus.Готов;
         }
 
         public void PayOrderPizza(int id)
         {
-            int index = -1;
-            for (int i = 0; i < source.OrderPizzas.Count; ++i)
-            {
-                if (source.Visitors[i].Id == id)
-                {
-                    index = i;
-                    break;
-                }
-            }
-            if (index == -1)
+            OrderPizza element = source.OrderPizzas.FirstOrDefault(rec => rec.Id == id);
+            if (element == null)
             {
                 throw new Exception("Элемент не найден");
             }
-            source.OrderPizzas[index].Status = OrderPizzaStatus.Оплачен;
+            element.Status = OrderPizzaStatus.Оплачен;
         }
 
         public void PutIngredientInFridge(FridgeIngredientBindingModel model)
         {
-            int maxId = 0;
-            for (int i = 0; i < source.FridgeIngredients.Count; ++i)
+            FridgeIngredient element = source.FridgeIngredients
+                                                .FirstOrDefault(rec => rec.FridgeId == model.FridgeId &&
+                                                                    rec.IngredientId == model.IngredientId);
+            if (element != null)
             {
-                if (source.FridgeIngredients[i].FridgeId == model.FridgeId &&
-                    source.FridgeIngredients[i].IngredientId == model.IngredientId)
-                {
-                    source.FridgeIngredients[i].Count += model.Count;
-                    return;
-                }
-                if (source.FridgeIngredients[i].Id > maxId)
-                {
-                    maxId = source.FridgeIngredients[i].Id;
-                }
+                element.Count += model.Count;
             }
-            source.FridgeIngredients.Add(new FridgeIngredient
+            else
             {
-                Id = ++maxId,
-                FridgeId = model.FridgeId,
-                IngredientId = model.IngredientId,
-                Count = model.Count
-            });
+                int maxId = source.FridgeIngredients.Count > 0 ? source.FridgeIngredients.Max(rec => rec.Id) : 0;
+                source.FridgeIngredients.Add(new FridgeIngredient
+                {
+                    Id = ++maxId,
+                    FridgeId = model.FridgeId,
+                    IngredientId = model.IngredientId,
+                    Count = model.Count
+                });
+            }
         }
 
     }
