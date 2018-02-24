@@ -21,100 +21,62 @@ namespace PizzeriaService.ImplementationsList
 
         public List<FridgeViewModel> GetList()
         {
-            List<FridgeViewModel> result = new List<FridgeViewModel>();
-            for (int i = 0; i < source.Fridges.Count; ++i)
-            {
-                // требуется дополнительно получить список компонентов на складе и их количество
-                List<FridgeIngredientViewModel> FridgeIngredients = new List<FridgeIngredientViewModel>();
-                for (int j = 0; j < source.FridgeIngredients.Count; ++j)
-                {
-                    if (source.FridgeIngredients[j].FridgeId == source.Fridges[i].Id)
-                    {
-                        string ingredientName = string.Empty;
-                        for (int k = 0; k < source.Ingredients.Count; ++k)
-                        {
-                            if (source.FridgeIngredients[j].IngredientId == source.Ingredients[k].Id)
-                            {
-                                ingredientName = source.Ingredients[k].IngredientName;
-                                break;
-                            }
-                        }
-                        FridgeIngredients.Add(new FridgeIngredientViewModel
-                        {
-                            Id = source.FridgeIngredients[j].Id,
-                            FridgeId = source.FridgeIngredients[j].FridgeId,
-                            IngredientId = source.FridgeIngredients[j].IngredientId,
-                            IngredientName = ingredientName,
-                            Count = source.FridgeIngredients[j].Count
-                        });
-                    }
-                }
-                result.Add(new FridgeViewModel
-                {
-                    Id = source.Fridges[i].Id,
-                    FridgeName = source.Fridges[i].FridgeName,
-                    FridgeIngredients = FridgeIngredients
-                });
-            }
+            List<FridgeViewModel> result = source.Fridges
+               .Select(rec => new FridgeViewModel
+               {
+                   Id = rec.Id,
+                   FridgeName = rec.FridgeName,
+                   FridgeIngredients = source.FridgeIngredients
+                           .Where(recPC => recPC.FridgeId == rec.Id)
+                           .Select(recPC => new FridgeIngredientViewModel
+                           {
+                               Id = recPC.Id,
+                               FridgeId = recPC.FridgeId,
+                               IngredientId = recPC.IngredientId,
+                               IngredientName = source.Ingredients
+                                   .FirstOrDefault(recC => recC.Id == recPC.IngredientId)?.IngredientName,
+                               Count = recPC.Count
+                           })
+                           .ToList()
+               })
+               .ToList();
             return result;
         }
 
         public FridgeViewModel GetElement(int id)
         {
-            for (int i = 0; i < source.Fridges.Count; ++i)
+            Fridge element = source.Fridges.FirstOrDefault(rec => rec.Id == id);
+            if (element != null)
             {
-                // требуется дополнительно получить список компонентов на складе и их количество
-                List<FridgeIngredientViewModel> FridgeIngredients = new List<FridgeIngredientViewModel>();
-                for (int j = 0; j < source.FridgeIngredients.Count; ++j)
+                return new FridgeViewModel
                 {
-                    if (source.FridgeIngredients[j].FridgeId == source.Fridges[i].Id)
-                    {
-                        string ingredientName = string.Empty;
-                        for (int k = 0; k < source.Ingredients.Count; ++k)
-                        {
-                            if (source.FridgeIngredients[j].IngredientId == source.Ingredients[k].Id)
+                    Id = element.Id,
+                    FridgeName = element.FridgeName,
+                    FridgeIngredients = source.FridgeIngredients
+                            .Where(recPC => recPC.FridgeId == element.Id)
+                            .Select(recPC => new FridgeIngredientViewModel
                             {
-                                ingredientName = source.Ingredients[k].IngredientName;
-                                break;
-                            }
-                        }
-                        FridgeIngredients.Add(new FridgeIngredientViewModel
-                        {
-                            Id = source.FridgeIngredients[j].Id,
-                            FridgeId = source.FridgeIngredients[j].FridgeId,
-                            IngredientId = source.FridgeIngredients[j].IngredientId,
-                            IngredientName = ingredientName,
-                            Count = source.FridgeIngredients[j].Count
-                        });
-                    }
-                }
-                if (source.Fridges[i].Id == id)
-                {
-                    return new FridgeViewModel
-                    {
-                        Id = source.Fridges[i].Id,
-                        FridgeName = source.Fridges[i].FridgeName,
-                        FridgeIngredients = FridgeIngredients
-                    };
-                }
+                                Id = recPC.Id,
+                                FridgeId = recPC.FridgeId,
+                                IngredientId = recPC.IngredientId,
+                                IngredientName = source.Ingredients
+                                    .FirstOrDefault(recC => recC.Id == recPC.IngredientId)?.IngredientName,
+                                Count = recPC.Count
+                            })
+                            .ToList()
+                };
             }
             throw new Exception("Элемент не найден");
         }
 
         public void AddElement(FridgeBindingModel model)
         {
-            int maxId = 0;
-            for (int i = 0; i < source.Fridges.Count; ++i)
+            Fridge element = source.Fridges.FirstOrDefault(rec => rec.FridgeName == model.FridgeName);
+            if (element != null)
             {
-                if (source.Fridges[i].Id > maxId)
-                {
-                    maxId = source.Fridges[i].Id;
-                }
-                if (source.Fridges[i].FridgeName == model.FridgeName)
-                {
-                    throw new Exception("Уже есть склад с таким названием");
-                }
+                throw new Exception("Уже есть склад с таким названием");
             }
+            int maxId = source.Fridges.Count > 0 ? source.Fridges.Max(rec => rec.Id) : 0;
             source.Fridges.Add(new Fridge
             {
                 Id = maxId + 1,
@@ -124,45 +86,33 @@ namespace PizzeriaService.ImplementationsList
 
         public void UpdElement(FridgeBindingModel model)
         {
-            int index = -1;
-            for (int i = 0; i < source.Fridges.Count; ++i)
+            Fridge element = source.Fridges.FirstOrDefault(rec =>
+                                        rec.FridgeName == model.FridgeName && rec.Id != model.Id);
+            if (element != null)
             {
-                if (source.Fridges[i].Id == model.Id)
-                {
-                    index = i;
-                }
-                if (source.Fridges[i].FridgeName == model.FridgeName &&
-                    source.Fridges[i].Id != model.Id)
-                {
-                    throw new Exception("Уже есть склад с таким названием");
-                }
+                throw new Exception("Уже есть склад с таким названием");
             }
-            if (index == -1)
+            element = source.Fridges.FirstOrDefault(rec => rec.Id == model.Id);
+            if (element == null)
             {
                 throw new Exception("Элемент не найден");
             }
-            source.Fridges[index].FridgeName = model.FridgeName;
+            element.FridgeName = model.FridgeName;
         }
 
         public void DelElement(int id)
         {
-            // при удалении удаляем все записи о компонентах на удаляемом складе
-            for (int i = 0; i < source.FridgeIngredients.Count; ++i)
+            Fridge element = source.Fridges.FirstOrDefault(rec => rec.Id == id);
+            if (element != null)
             {
-                if (source.FridgeIngredients[i].FridgeId == id)
-                {
-                    source.FridgeIngredients.RemoveAt(i--);
-                }
+                // при удалении удаляем все записи о компонентах на удаляемом складе
+                source.FridgeIngredients.RemoveAll(rec => rec.FridgeId == id);
+                source.Fridges.Remove(element);
             }
-            for (int i = 0; i < source.Fridges.Count; ++i)
+            else
             {
-                if (source.Fridges[i].Id == id)
-                {
-                    source.Fridges.RemoveAt(i);
-                    return;
-                }
+                throw new Exception("Элемент не найден");
             }
-            throw new Exception("Элемент не найден");
         }
 
     }

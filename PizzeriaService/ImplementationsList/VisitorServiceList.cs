@@ -22,48 +22,39 @@ namespace PizzeriaService.ImplementationsList
 
         public List<VisitorViewModel> GetList()
         {
-            List<VisitorViewModel> result = new List<VisitorViewModel>();
-            for (int i = 0; i < source.Visitors.Count; ++i)
-            {
-                result.Add(new VisitorViewModel
+            List<VisitorViewModel> result = source.Visitors
+                .Select(rec => new VisitorViewModel
                 {
-                    Id = source.Visitors[i].Id,
-                    VisitorFIO = source.Visitors[i].VisitorFIO
-                });
-            }
+                    Id = rec.Id,
+                    VisitorFIO = rec.VisitorFIO
+                })
+                .ToList();
             return result;
+            
         }
 
         public VisitorViewModel GetElement(int id)
         {
-            for (int i = 0; i < source.Visitors.Count; ++i)
+            Visitor element = source.Visitors.FirstOrDefault(rec => rec.Id == id);
+            if (element != null)
             {
-                if (source.Visitors[i].Id == id)
+                return new VisitorViewModel
                 {
-                    return new VisitorViewModel
-                    {
-                        Id = source.Visitors[i].Id,
-                        VisitorFIO = source.Visitors[i].VisitorFIO
-                    };
-                }
+                    Id = element.Id,
+                    VisitorFIO = element.VisitorFIO
+                };
             }
             throw new Exception("Элемент не найден");
         }
 
         public void AddElement(VisitorBindingModel model)
         {
-            int maxId = 0;
-            for (int i = 0; i < source.Visitors.Count; ++i)
+            Visitor element = source.Visitors.FirstOrDefault(rec => rec.VisitorFIO == model.VisitorFIO);
+            if (element != null)
             {
-                if (source.Visitors[i].Id > maxId)
-                {
-                    maxId = source.Visitors[i].Id;
-                }
-                if (source.Visitors[i].VisitorFIO == model.VisitorFIO)
-                {
-                    throw new Exception("Уже есть клиент с таким ФИО");
-                }
+                throw new Exception("Уже есть клиент с таким ФИО");
             }
+            int maxId = source.Visitors.Count > 0 ? source.Visitors.Max(rec => rec.Id) : 0;
             source.Visitors.Add(new Visitor
             {
                 Id = maxId + 1,
@@ -73,37 +64,31 @@ namespace PizzeriaService.ImplementationsList
 
         public void DelElement(int id)
         {
-            for (int i = 0; i < source.Visitors.Count; ++i)
+            Visitor element = source.Visitors.FirstOrDefault(rec => rec.Id == id);
+            if (element != null)
             {
-                if (source.Visitors[i].Id == id)
-                {
-                    source.Visitors.RemoveAt(i);
-                    return;
-                }
+                source.Visitors.Remove(element);
             }
-            throw new Exception("Элемент не найден");
+            else
+            {
+                throw new Exception("Элемент не найден");
+            }
         }
 
         public void UpdElement(VisitorBindingModel model)
         {
-            int index = -1;
-            for (int i = 0; i < source.Visitors.Count; ++i)
+            Visitor element = source.Visitors.FirstOrDefault(rec =>
+                                   rec.VisitorFIO == model.VisitorFIO && rec.Id != model.Id);
+            if (element != null)
             {
-                if (source.Visitors[i].Id == model.Id)
-                {
-                    index = i;
-                }
-                if (source.Visitors[i].VisitorFIO == model.VisitorFIO &&
-                    source.Visitors[i].Id != model.Id)
-                {
-                    throw new Exception("Уже есть клиент с таким ФИО");
-                }
+                throw new Exception("Уже есть клиент с таким ФИО");
             }
-            if (index == -1)
+            element = source.Visitors.FirstOrDefault(rec => rec.Id == model.Id);
+            if (element == null)
             {
                 throw new Exception("Элемент не найден");
             }
-            source.Visitors[index].VisitorFIO = model.VisitorFIO;
+            element.VisitorFIO = model.VisitorFIO;
         }
     }
 }

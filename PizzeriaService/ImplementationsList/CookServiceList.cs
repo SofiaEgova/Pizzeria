@@ -21,48 +21,38 @@ namespace PizzeriaService.ImplementationsList
 
         public List<CookViewModel> GetList()
         {
-            List<CookViewModel> result = new List<CookViewModel>();
-            for (int i = 0; i < source.Cooks.Count; ++i)
-            {
-                result.Add(new CookViewModel
+            List<CookViewModel> result = source.Cooks
+                .Select(rec => new CookViewModel
                 {
-                    Id = source.Cooks[i].Id,
-                    CookFIO = source.Cooks[i].CookFIO
-                });
-            }
+                    Id = rec.Id,
+                    CookFIO = rec.CookFIO
+                })
+                .ToList();
             return result;
         }
 
         public CookViewModel GetElement(int id)
         {
-            for (int i = 0; i < source.Cooks.Count; ++i)
+            Cook element = source.Cooks.FirstOrDefault(rec => rec.Id == id);
+            if (element != null)
             {
-                if (source.Cooks[i].Id == id)
+                return new CookViewModel
                 {
-                    return new CookViewModel
-                    {
-                        Id = source.Cooks[i].Id,
-                        CookFIO = source.Cooks[i].CookFIO
-                    };
-                }
+                    Id = element.Id,
+                    CookFIO = element.CookFIO
+                };
             }
             throw new Exception("Элемент не найден");
         }
 
         public void AddElement(CookBindingModel model)
         {
-            int maxId = 0;
-            for (int i = 0; i < source.Cooks.Count; ++i)
+            Cook element = source.Cooks.FirstOrDefault(rec => rec.CookFIO == model.CookFIO);
+            if (element != null)
             {
-                if (source.Cooks[i].Id > maxId)
-                {
-                    maxId = source.Cooks[i].Id;
-                }
-                if (source.Cooks[i].CookFIO == model.CookFIO)
-                {
-                    throw new Exception("Уже есть сотрудник с таким ФИО");
-                }
+                throw new Exception("Уже есть клиент с таким ФИО");
             }
+            int maxId = source.Cooks.Count > 0 ? source.Cooks.Max(rec => rec.Id) : 0;
             source.Cooks.Add(new Cook
             {
                 Id = maxId + 1,
@@ -72,37 +62,31 @@ namespace PizzeriaService.ImplementationsList
 
         public void UpdElement(CookBindingModel model)
         {
-            int index = -1;
-            for (int i = 0; i < source.Cooks.Count; ++i)
+            Cook element = source.Cooks.FirstOrDefault(rec =>
+                                    rec.CookFIO == model.CookFIO && rec.Id != model.Id);
+            if (element != null)
             {
-                if (source.Cooks[i].Id == model.Id)
-                {
-                    index = i;
-                }
-                if (source.Cooks[i].CookFIO == model.CookFIO &&
-                    source.Cooks[i].Id != model.Id)
-                {
-                    throw new Exception("Уже есть сотрудник с таким ФИО");
-                }
+                throw new Exception("Уже есть клиент с таким ФИО");
             }
-            if (index == -1)
+            element = source.Cooks.FirstOrDefault(rec => rec.Id == model.Id);
+            if (element == null)
             {
                 throw new Exception("Элемент не найден");
             }
-            source.Cooks[index].CookFIO = model.CookFIO;
+            element.CookFIO = model.CookFIO;
         }
 
         public void DelElement(int id)
         {
-            for (int i = 0; i < source.Cooks.Count; ++i)
+            Cook element = source.Cooks.FirstOrDefault(rec => rec.Id == id);
+            if (element != null)
             {
-                if (source.Cooks[i].Id == id)
-                {
-                    source.Cooks.RemoveAt(i);
-                    return;
-                }
+                source.Cooks.Remove(element);
             }
-            throw new Exception("Элемент не найден");
+            else
+            {
+                throw new Exception("Элемент не найден");
+            }
         }
     }
 }
