@@ -1,7 +1,10 @@
-﻿using PizzeriaService.ImplementationsList;
+﻿using PizzeriaService;
+using PizzeriaService.ImplementationsBD;
+using PizzeriaService.ImplementationsList;
 using PizzeriaService.Interfaces;
 using System;
 using System.Collections.Generic;
+using System.Data.Entity;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -28,12 +31,13 @@ namespace PizzeriaView
         public static IUnityContainer BuildUnityContainer()
         {
             var currentContainer = new UnityContainer();
-            currentContainer.RegisterType<IVisitorService, VisitorServiceList>(new HierarchicalLifetimeManager());
-            currentContainer.RegisterType<IIngredientService, IngredientServiceList>(new HierarchicalLifetimeManager());
-            currentContainer.RegisterType<ICookService, CookServiceList>(new HierarchicalLifetimeManager());
-            currentContainer.RegisterType<IPizzaService, PizzaServiceList>(new HierarchicalLifetimeManager());
-            currentContainer.RegisterType<IFridgeService, FridgeServiceList>(new HierarchicalLifetimeManager());
-            currentContainer.RegisterType<IMainService, MainServiceList>(new HierarchicalLifetimeManager());
+            currentContainer.RegisterType<DbContext, PizzeriaDbContext>(new HierarchicalLifetimeManager());
+            currentContainer.RegisterType<IVisitorService, VisitorServiceBD>(new HierarchicalLifetimeManager());
+            currentContainer.RegisterType<IIngredientService, IngredientServiceBD>(new HierarchicalLifetimeManager());
+            currentContainer.RegisterType<ICookService, CookServiceBD>(new HierarchicalLifetimeManager());
+            currentContainer.RegisterType<IPizzaService, PizzaServiceBD>(new HierarchicalLifetimeManager());
+            currentContainer.RegisterType<IFridgeService, FridgeServiceBD>(new HierarchicalLifetimeManager());
+            currentContainer.RegisterType<IMainService, MainServiceBD>(new HierarchicalLifetimeManager());
 
             return currentContainer;
         }
