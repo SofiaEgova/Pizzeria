@@ -25,5 +25,11 @@ namespace PizzeriaModel
         public DateTime TimeCreate { get; set; }
 
         public DateTime? TimeDone { get; set; }
+
+        public virtual Visitor Visitor { get; set; }
+
+        public virtual Pizza Pizza { get; set; }
+
+        public virtual Cook Cook { get; set; }
     }
 }
