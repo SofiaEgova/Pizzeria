@@ -98,6 +98,7 @@
       <HintPath>..\packages\System.Net.Http.2.0.20126.16343\lib\net40\System.Net.Http.WebRequest.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -211,6 +212,7 @@
     <Compile Include="FormVisitors.Designer.cs">
       <DependentUpon>FormVisitors.cs</DependentUpon>
     </Compile>
+    <Compile Include="HttpErrorMessage.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SqlServerTypes\Loader.cs" />
