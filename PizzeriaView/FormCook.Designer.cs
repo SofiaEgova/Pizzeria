@@ -82,7 +82,6 @@
             this.Name = "FormCook";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "Повар";
-            this.Load += new System.EventHandler(this.Cook_Load);
             this.ResumeLayout(false);
             this.PerformLayout();
 
