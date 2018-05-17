@@ -1,13 +1,18 @@
-﻿using PizzeriaModel;
+﻿using Microsoft.Office.Interop.Word;
+using PizzeriaModel;
 using PizzeriaService.BindingModels;
 using PizzeriaService.Interfaces;
 using PizzeriaService.ViewModels;
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Data.Entity.SqlServer;
 using System.Linq;
+using System.Net;
+using System.Net.Mail;
 using System.Text;
 using System.Threading.Tasks;
+using System.Data.Entity;
 
 namespace PizzeriaService.ImplementationsBD
 {
@@ -49,7 +54,7 @@ namespace PizzeriaService.ImplementationsBD
 
         public void CreateOrderPizza(OrderPizzaBindingModel model)
         {
-            context.OrderPizzas.Add(new OrderPizza
+            var orderPizza = new OrderPizza
             {
                 VisitorId = model.VisitorId,
                 PizzaId = model.PizzaId,
@@ -57,8 +62,13 @@ namespace PizzeriaService.ImplementationsBD
                 Count = model.Count,
                 Sum = model.Sum,
                 Status = OrderPizzaStatus.Принят
-            });
+            };
+            context.OrderPizzas.Add(orderPizza);
             context.SaveChanges();
+            var visitor = context.Visitors.FirstOrDefault(x => x.Id == model.VisitorId);
+            SendEmail(visitor.Mail, "Оповещение по заказам",
+                string.Format("Заказ №{0} от {1} создан успешно", orderPizza.Id,
+                orderPizza.TimeCreate.ToShortDateString()));
         }
 
         public void TakeOrderPizzaInWork(OrderPizzaBindingModel model)
@@ -67,7 +77,7 @@ namespace PizzeriaService.ImplementationsBD
             {
                 try
                 {
-                    OrderPizza element = context.OrderPizzas.FirstOrDefault(rec => rec.Id == model.Id);
+                    OrderPizza element = context.OrderPizzas.Include(x => x.Visitor).FirstOrDefault(rec => rec.Id == model.Id);
                     if (element == null)
                     {
                         throw new Exception("Элемент не найден");
@@ -108,6 +118,8 @@ namespace PizzeriaService.ImplementationsBD
                     element.TimeDone = DateTime.Now;
                     element.Status = OrderPizzaStatus.Выполняется;
                     context.SaveChanges();
+                    SendEmail(element.Visitor.Mail, "Оповещение по заказам",
+                        string.Format("Заказ №{0} от {1} передеан в работу", element.Id, element.TimeCreate.ToShortDateString()));
                     transaction.Commit();
                 }
                 catch (Exception)
@@ -127,6 +139,9 @@ namespace PizzeriaService.ImplementationsBD
             }
             element.Status = OrderPizzaStatus.Готов;
             context.SaveChanges();
+            SendEmail(element.Visitor.Mail, "Оповещение по заказам",
+                string.Format("Заказ №{0} от {1} передан на оплату", element.Id,
+                element.TimeCreate.ToShortDateString()));
         }
 
         public void PayOrderPizza(int id)
@@ -138,6 +153,8 @@ namespace PizzeriaService.ImplementationsBD
             }
             element.Status = OrderPizzaStatus.Оплачен;
             context.SaveChanges();
+            SendEmail(element.Visitor.Mail, "Оповещение по заказам",
+                string.Format("Заказ №{0} от {1} оплачен успешно", element.Id, element.TimeCreate.ToShortDateString()));
         }
 
         public void PutIngredientInFridge(FridgeIngredientBindingModel model)
@@ -159,6 +176,40 @@ namespace PizzeriaService.ImplementationsBD
                 });
             }
             context.SaveChanges();
+        }
+
+        private void SendEmail(string mailAddress, string subject, string text)
+        {
+            System.Net.Mail.MailMessage objMailMessage = new System.Net.Mail.MailMessage();
+            SmtpClient objSmtpClient = null;
+
+            try
+            {
+                objMailMessage.From = new MailAddress(ConfigurationManager.AppSettings["MailLogin"]);
+                objMailMessage.To.Add(new MailAddress(mailAddress));
+                objMailMessage.Subject = subject;
+                objMailMessage.Body = text;
+                objMailMessage.SubjectEncoding = System.Text.Encoding.UTF8;
+                objMailMessage.BodyEncoding = System.Text.Encoding.UTF8;
+
+                objSmtpClient = new SmtpClient("smtp.gmail.com", 587);
+                objSmtpClient.UseDefaultCredentials = false;
+                objSmtpClient.EnableSsl = true;
+                objSmtpClient.DeliveryMethod = SmtpDeliveryMethod.Network;
+                objSmtpClient.Credentials = new NetworkCredential(ConfigurationManager.AppSettings["MailLogin"],
+                    ConfigurationManager.AppSettings["MailPassword"]);
+
+                objSmtpClient.Send(objMailMessage);
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            finally
+            {
+                objMailMessage = null;
+                objSmtpClient = null;
+            }
         }
     }
 }

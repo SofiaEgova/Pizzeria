@@ -12,6 +12,8 @@ namespace PizzeriaModel
     {
         public int Id { get; set; }
 
+        public string Mail { get; set; }
+
         [Required]
         public string VisitorFIO { get; set; }
 

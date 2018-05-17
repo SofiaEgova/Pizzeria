@@ -49,6 +49,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="MessageInfo.cs" />
     <Compile Include="Visitor.cs" />
     <Compile Include="Cook.cs" />
     <Compile Include="Fridge.cs" />

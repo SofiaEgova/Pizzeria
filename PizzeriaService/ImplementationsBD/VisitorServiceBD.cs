@@ -25,7 +25,8 @@ namespace PizzeriaService.ImplementationsBD
                 .Select(rec => new VisitorViewModel
                 {
                     Id = rec.Id,
-                    VisitorFIO = rec.VisitorFIO
+                    VisitorFIO = rec.VisitorFIO,
+                    Mail = rec.Mail
                 })
                 .ToList();
             return result;
@@ -39,7 +40,8 @@ namespace PizzeriaService.ImplementationsBD
                 return new VisitorViewModel
                 {
                     Id = element.Id,
-                    VisitorFIO = element.VisitorFIO
+                    VisitorFIO = element.VisitorFIO,
+                    Mail = element.Mail
                 };
             }
             throw new Exception("Элемент не найден");
@@ -54,7 +56,8 @@ namespace PizzeriaService.ImplementationsBD
             }
             context.Visitors.Add(new Visitor
             {
-                VisitorFIO = model.VisitorFIO
+                VisitorFIO = model.VisitorFIO,
+                Mail = model.Mail
             });
             context.SaveChanges();
         }
@@ -73,6 +76,7 @@ namespace PizzeriaService.ImplementationsBD
                 throw new Exception("Элемент не найден");
             }
             element.VisitorFIO = model.VisitorFIO;
+            element.Mail = model.Mail;
             context.SaveChanges();
         }
 

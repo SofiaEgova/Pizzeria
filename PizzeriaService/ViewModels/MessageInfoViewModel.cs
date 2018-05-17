@@ -8,18 +8,21 @@ using System.Threading.Tasks;
 namespace PizzeriaService.ViewModels
 {
     [DataContract]
-    public class VisitorViewModel
+    public class MessageInfoViewModel
     {
         [DataMember]
-        public int Id { get; set; }
+        public string MessageId { get; set; }
 
         [DataMember]
-        public string Mail { get; set; }
+        public string VisitorName { get; set; }
 
         [DataMember]
-        public string VisitorFIO { get; set; }
+        public DateTime DateDelivery { get; set; }
 
         [DataMember]
-        public List<MessageInfoViewModel> Messages { get; set; }
+        public string Subject { get; set; }
+
+        [DataMember]
+        public string Body { get; set; }
     }
 }
