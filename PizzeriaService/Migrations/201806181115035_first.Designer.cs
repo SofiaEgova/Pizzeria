@@ -7,13 +7,13 @@ namespace PizzeriaService.Migrations
     using System.Resources;
     
     [GeneratedCode("EntityFramework.Migrations", "6.2.0-61023")]
-    public sealed partial class AddFieldInVisitor : IMigrationMetadata
+    public sealed partial class first : IMigrationMetadata
     {
-        private readonly ResourceManager Resources = new ResourceManager(typeof(AddFieldInVisitor));
+        private readonly ResourceManager Resources = new ResourceManager(typeof(first));
         
         string IMigrationMetadata.Id
         {
-            get { return "201805050507388_AddFieldInVisitor"; }
+            get { return "201806181115035_first"; }
         }
         
         string IMigrationMetadata.Source

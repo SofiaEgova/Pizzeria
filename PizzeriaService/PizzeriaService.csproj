@@ -96,17 +96,9 @@
     <Compile Include="Interfaces\IIngredientService.cs" />
     <Compile Include="Interfaces\IMainService.cs" />
     <Compile Include="Interfaces\IPizzaService.cs" />
-    <Compile Include="Migrations\201803100821201_FirstMigration.cs" />
-    <Compile Include="Migrations\201803100821201_FirstMigration.Designer.cs">
-      <DependentUpon>201803100821201_FirstMigration.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Migrations\201805050507388_AddFieldInVisitor.cs" />
-    <Compile Include="Migrations\201805050507388_AddFieldInVisitor.Designer.cs">
-      <DependentUpon>201805050507388_AddFieldInVisitor.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Migrations\201805050546431_AddTableMessageInfo.cs" />
-    <Compile Include="Migrations\201805050546431_AddTableMessageInfo.Designer.cs">
-      <DependentUpon>201805050546431_AddTableMessageInfo.cs</DependentUpon>
+    <Compile Include="Migrations\201806181115035_first.cs" />
+    <Compile Include="Migrations\201806181115035_first.Designer.cs">
+      <DependentUpon>201806181115035_first.cs</DependentUpon>
     </Compile>
     <Compile Include="Migrations\Configuration.cs" />
     <Compile Include="PizzeriaDbContext.cs" />
@@ -140,14 +132,8 @@
     <None Include="Resources\TIMCYR.TTF" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Migrations\201803100821201_FirstMigration.resx">
-      <DependentUpon>201803100821201_FirstMigration.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Migrations\201805050507388_AddFieldInVisitor.resx">
-      <DependentUpon>201805050507388_AddFieldInVisitor.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Migrations\201805050546431_AddTableMessageInfo.resx">
-      <DependentUpon>201805050546431_AddTableMessageInfo.cs</DependentUpon>
+    <EmbeddedResource Include="Migrations\201806181115035_first.resx">
+      <DependentUpon>201806181115035_first.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
