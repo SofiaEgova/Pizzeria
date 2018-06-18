@@ -16,6 +16,11 @@
                 <MenuItem Header="Повара" HorizontalAlignment="Left" Width="145" Click="повараToolStripMenuItem_Click"/>
             </MenuItem>
             <MenuItem Header="Пополнить холодильник" Click="пополнитьХолодильникToolStripMenuItem_Click"/>
+            <MenuItem Header="Отчеты">
+                <MenuItem Header="Прайс пицц" HorizontalAlignment="Left" Width="145" Click="MenuItem_Click"/>
+                <MenuItem Header="Загруженность холодильников" HorizontalAlignment="Left" Width="145" Click="MenuItem_Click_1"/>
+                <MenuItem Header="Заказы посетителей" HorizontalAlignment="Left" Width="145" Click="MenuItem_Click_2"/>
+            </MenuItem>
         </Menu>
         <Button x:Name="buttonOrderPizza" Content="Заказать пиццу" HorizontalAlignment="Left" Margin="567,57,0,0" VerticalAlignment="Top" Width="142" Click="buttonOrderPizza_Click"/>
         <Button x:Name="buttonTakeOrderInWork" Content="Отдать на выполнение" HorizontalAlignment="Left" Margin="567,84,0,0" VerticalAlignment="Top" Width="142" RenderTransformOrigin="0.457,0.346" Click="buttonTakeOrderInWork_Click"/>
