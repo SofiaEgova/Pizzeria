@@ -38,24 +38,20 @@ namespace PizzeriaWpf
         {
             try
             {
-                var response = APIClient.GetRequest("api/Fridge/GetList");
-                if (response.Result.IsSuccessStatusCode)
+                List<FridgeViewModel> list = Task.Run(() => APIClient.GetRequestData<List<FridgeViewModel>>("api/Fridge/GetList")).Result;
+                if (list != null)
                 {
-                    List<FridgeViewModel> list = APIClient.GetElement<List<FridgeViewModel>>(response);
-                    if (list != null)
-                    {
-                        dataGrid.ItemsSource = list;
+                    dataGrid.ItemsSource = list;
                     dataGrid.Columns[0].Visibility = Visibility.Hidden;
                     dataGrid.Columns[1].Width = DataGridLength.Auto;
-                    }
-                }
-                else
-                {
-                    throw new Exception(APIClient.GetError(response));
                 }
             }
             catch (Exception ex)
             {
+                while (ex.InnerException != null)
+                {
+                    ex = ex.InnerException;
+                }
                 MessageBox.Show(ex.Message, "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
@@ -89,19 +85,20 @@ namespace PizzeriaWpf
                 if (MessageBox.Show("Удалить запись", "Вопрос", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
                 {
                     int id = ((FridgeViewModel)dataGrid.SelectedItem).Id;
-                    try
+                    Task task = Task.Run(() => APIClient.PostRequestData("api/Fridge/DelElement", new VisitorBindingModel { Id = id }));
+
+                    task.ContinueWith((prevTask) => MessageBox.Show("Запись удалена. Обновите список", "Успех", MessageBoxButton.OK, MessageBoxImage.Information),
+                    TaskContinuationOptions.OnlyOnRanToCompletion);
+
+                    task.ContinueWith((prevTask) =>
                     {
-                        var response = APIClient.PostRequest("api/Fridge/DelElement", new VisitorBindingModel { Id = id });
-                        if (!response.Result.IsSuccessStatusCode)
+                        var ex = (Exception)prevTask.Exception;
+                        while (ex.InnerException != null)
                         {
-                            throw new Exception(APIClient.GetError(response));
+                            ex = ex.InnerException;
                         }
-                    }
-                    catch (Exception ex)
-                    {
                         MessageBox.Show(ex.Message, "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-                    }
-                    LoadData();
+                    }, TaskContinuationOptions.OnlyOnFaulted);
                 }
             }
         }

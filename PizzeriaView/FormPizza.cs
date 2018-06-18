@@ -27,22 +27,18 @@ namespace PizzeriaView
             {
                 try
                 {
-                    var response = APIClient.GetRequest("api/Pizza/Get/" + id.Value);
-                    if (response.Result.IsSuccessStatusCode)
-                    {
-                        var Pizza = APIClient.GetElement<PizzaViewModel>(response);
-                        textBoxName.Text = Pizza.PizzaName;
-                        textBoxPrice.Text = Pizza.Price.ToString();
-                        PizzaIngredients = Pizza.PizzaIngredients;
-                        LoadData();
-                    }
-                    else
-                    {
-                        throw new Exception(APIClient.GetError(response));
-                    }
+                    var pizza = Task.Run(() => APIClient.GetRequestData<PizzaViewModel>("api/Pizza/Get/" + id.Value)).Result;
+                    textBoxName.Text = pizza.PizzaName;
+                    textBoxPrice.Text = pizza.Price.ToString();
+                    PizzaIngredients = pizza.PizzaIngredients;
+                    LoadData();
                 }
                 catch (Exception ex)
                 {
+                    while (ex.InnerException != null)
+                    {
+                        ex = ex.InnerException;
+                    }
                     MessageBox.Show(ex.Message, "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
@@ -144,54 +140,53 @@ namespace PizzeriaView
                 MessageBox.Show("Заполните компоненты", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
-            try
+            List<PizzaIngredientBindingModel> pizzaIngredientBM = new List<PizzaIngredientBindingModel>();
+            for (int i = 0; i < PizzaIngredients.Count; ++i)
             {
-                List<PizzaIngredientBindingModel> PizzaIngredientBM = new List<PizzaIngredientBindingModel>();
-                for (int i = 0; i < PizzaIngredients.Count; ++i)
+                pizzaIngredientBM.Add(new PizzaIngredientBindingModel
                 {
-                    PizzaIngredientBM.Add(new PizzaIngredientBindingModel
-                    {
-                        Id = PizzaIngredients[i].Id,
-                        PizzaId = PizzaIngredients[i].PizzaId,
-                        IngredientId = PizzaIngredients[i].IngredientId,
-                        Count = PizzaIngredients[i].Count
-                    });
-                }
-                Task<HttpResponseMessage> response;
-                if (id.HasValue)
-                {
-                    response = APIClient.PostRequest("api/Pizza/UpdElement", new PizzaBindingModel
-                    {
-                        Id = id.Value,
-                        PizzaName = textBoxName.Text,
-                        Price = Convert.ToInt32(textBoxPrice.Text),
-                        PizzaIngredients = PizzaIngredientBM
-                    });
-                }
-                else
-                {
-                    response = APIClient.PostRequest("api/Pizza/AddElement", new PizzaBindingModel
-                    {
-                        PizzaName = textBoxName.Text,
-                        Price = Convert.ToInt32(textBoxPrice.Text),
-                        PizzaIngredients = PizzaIngredientBM
-                    });
-                }
-                if (response.Result.IsSuccessStatusCode)
-                {
-                    MessageBox.Show("Сохранение прошло успешно", "Сообщение", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    DialogResult = DialogResult.OK;
-                    Close();
-                }
-                else
-                {
-                    throw new Exception(APIClient.GetError(response));
-                }
+                    Id = PizzaIngredients[i].Id,
+                    PizzaId = PizzaIngredients[i].PizzaId,
+                    IngredientId = PizzaIngredients[i].IngredientId,
+                    Count = PizzaIngredients[i].Count
+                });
             }
-            catch (Exception ex)
+            string name = textBoxName.Text;
+            int price = Convert.ToInt32(textBoxPrice.Text);
+            Task task;
+            if (id.HasValue)
             {
+                task = Task.Run(() => APIClient.PostRequestData("api/Pizza/UpdElement", new PizzaBindingModel
+                {
+                    Id = id.Value,
+                    PizzaName = name,
+                    Price = price,
+                    PizzaIngredients = pizzaIngredientBM
+                }));
+            }
+            else
+            {
+                task = Task.Run(() => APIClient.PostRequestData("api/Pizza/AddElement", new PizzaBindingModel
+                {
+                    PizzaName = name,
+                    Price = price,
+                    PizzaIngredients = pizzaIngredientBM
+                }));
+            }
+
+            task.ContinueWith((prevTask) => MessageBox.Show("Сохранение прошло успешно. Обновите список", "Сообщение", MessageBoxButtons.OK, MessageBoxIcon.Information),
+                TaskContinuationOptions.OnlyOnRanToCompletion);
+            task.ContinueWith((prevTask) =>
+            {
+                var ex = (Exception)prevTask.Exception;
+                while (ex.InnerException != null)
+                {
+                    ex = ex.InnerException;
+                }
                 MessageBox.Show(ex.Message, "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+            }, TaskContinuationOptions.OnlyOnFaulted);
+
+            Close();
         }
 
         private void buttonCancel_Click(object sender, EventArgs e)

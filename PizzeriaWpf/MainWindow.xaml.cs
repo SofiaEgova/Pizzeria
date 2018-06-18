@@ -29,32 +29,28 @@ namespace PizzeriaWpf
         {
             InitializeComponent();
         }
-        
+
         private void LoadData()
         {
             try
             {
-                var response = APIClient.GetRequest("api/Main/GetList");
-                if (response.Result.IsSuccessStatusCode)
+                List<OrderPizzaViewModel> list = Task.Run(() => APIClient.GetRequestData<List<OrderPizzaViewModel>>("api/Main/GetList")).Result;
+                if (list != null)
                 {
-                    List<OrderPizzaViewModel> list = APIClient.GetElement<List<OrderPizzaViewModel>>(response);
-                    if (list != null)
-                    {
-                        dataGridVeiw.ItemsSource = list;
+                    dataGridVeiw.ItemsSource = list;
                     dataGridVeiw.Columns[0].Visibility = Visibility.Hidden;
                     dataGridVeiw.Columns[1].Visibility = Visibility.Hidden;
                     dataGridVeiw.Columns[3].Visibility = Visibility.Hidden;
                     dataGridVeiw.Columns[5].Visibility = Visibility.Hidden;
                     dataGridVeiw.Columns[1].Width = DataGridLength.Auto;
-                    }
-                }
-                else
-                {
-                    throw new Exception(APIClient.GetError(response));
                 }
             }
             catch (Exception ex)
             {
+                while (ex.InnerException != null)
+                {
+                    ex = ex.InnerException;
+                }
                 MessageBox.Show(ex.Message, "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
@@ -118,25 +114,23 @@ namespace PizzeriaWpf
             if (dataGridVeiw.SelectedItem != null)
             {
                 int id = ((OrderPizzaViewModel)dataGridVeiw.SelectedItem).Id;
-                try
+                Task task = Task.Run(() => APIClient.PostRequestData("api/Main/FinishOrderPizza", new OrderPizzaBindingModel
                 {
-                    var response = APIClient.PostRequest("api/Main/FinishOrderPizza", new OrderPizzaBindingModel
-                    {
-                        Id = id
-                    });
-                    if (response.Result.IsSuccessStatusCode)
-                    {
-                        LoadData();
-                    }
-                    else
-                    {
-                        throw new Exception(APIClient.GetError(response));
-                    }
-                }
-                catch (Exception ex)
+                    Id = id
+                }));
+
+                task.ContinueWith((prevTask) => MessageBox.Show("Статус заказа изменен. Обновите список", "Успех", MessageBoxButton.OK, MessageBoxImage.Information),
+                TaskContinuationOptions.OnlyOnRanToCompletion);
+
+                task.ContinueWith((prevTask) =>
                 {
+                    var ex = (Exception)prevTask.Exception;
+                    while (ex.InnerException != null)
+                    {
+                        ex = ex.InnerException;
+                    }
                     MessageBox.Show(ex.Message, "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
+                }, TaskContinuationOptions.OnlyOnFaulted);
             }
         }
 
@@ -145,25 +139,23 @@ namespace PizzeriaWpf
             if (dataGridVeiw.SelectedItem != null)
             {
                 int id = ((OrderPizzaViewModel)dataGridVeiw.SelectedItem).Id;
-                try
+                Task task = Task.Run(() => APIClient.PostRequestData("api/Main/PayOrderPizza", new OrderPizzaBindingModel
                 {
-                    var response = APIClient.PostRequest("api/Main/PayOrderPizza", new OrderPizzaBindingModel
-                    {
-                        Id = id
-                    });
-                    if (response.Result.IsSuccessStatusCode)
-                    {
-                        LoadData();
-                    }
-                    else
-                    {
-                        throw new Exception(APIClient.GetError(response));
-                    }
-                }
-                catch (Exception ex)
+                    Id = id
+                }));
+
+                task.ContinueWith((prevTask) => MessageBox.Show("Статус заказа изменен. Обновите список", "Успех", MessageBoxButton.OK, MessageBoxImage.Information),
+                TaskContinuationOptions.OnlyOnRanToCompletion);
+
+                task.ContinueWith((prevTask) =>
                 {
+                    var ex = (Exception)prevTask.Exception;
+                    while (ex.InnerException != null)
+                    {
+                        ex = ex.InnerException;
+                    }
                     MessageBox.Show(ex.Message, "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
+                }, TaskContinuationOptions.OnlyOnFaulted);
             }
         }
 
@@ -180,25 +172,24 @@ namespace PizzeriaWpf
             };
             if (sfd.ShowDialog() == true)
             {
-                try
+                string fileName = sfd.FileName;
+                Task task = Task.Run(() => APIClient.PostRequestData("api/Report/SavePizzaPrice", new ReportBindingModel
                 {
-                    var response = APIClient.PostRequest("api/Report/SaveProductPrice", new ReportBindingModel
-                    {
-                        FileName = sfd.FileName
-                    });
-                    if (response.Result.IsSuccessStatusCode)
-                    {
-                        MessageBox.Show("Выполнено", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
-                    }
-                    else
-                    {
-                        throw new Exception(APIClient.GetError(response));
-                    }
-                }
-                catch (Exception ex)
+                    FileName = fileName
+                }));
+
+                task.ContinueWith((prevTask) => MessageBox.Show("Выполнено", "Успех", MessageBoxButton.OK, MessageBoxImage.Information),
+                TaskContinuationOptions.OnlyOnRanToCompletion);
+
+                task.ContinueWith((prevTask) =>
                 {
+                    var ex = (Exception)prevTask.Exception;
+                    while (ex.InnerException != null)
+                    {
+                        ex = ex.InnerException;
+                    }
                     MessageBox.Show(ex.Message, "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
+                }, TaskContinuationOptions.OnlyOnFaulted);
             }
         }
 

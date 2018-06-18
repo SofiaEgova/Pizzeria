@@ -38,24 +38,20 @@ namespace PizzeriaWpf
         {
             try
             {
-                var response = APIClient.GetRequest("api/Cook/GetList");
-                if (response.Result.IsSuccessStatusCode)
-                {
-                    List<CookViewModel> list = APIClient.GetElement<List<CookViewModel>>(response);
-                    if (list != null)
+                List<CookViewModel> list = Task.Run(() => APIClient.GetRequestData<List<CookViewModel>>("api/Cook/GetList")).Result;
+                if (list != null)
                     {
                         dataGrid.ItemsSource = list;
                     dataGrid.Columns[0].Visibility = Visibility.Hidden;
                     dataGrid.Columns[1].Width = dataGrid.Width - 8;
                     }
-                }
-                else
-                {
-                    throw new Exception(APIClient.GetError(response));
-                }
             }
             catch (Exception ex)
             {
+                while (ex.InnerException != null)
+                {
+                    ex = ex.InnerException;
+                }
                 MessageBox.Show(ex.Message, "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
@@ -89,19 +85,20 @@ namespace PizzeriaWpf
                 if (MessageBox.Show("Удалить запись", "Вопрос", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
                 {
                     int id = ((CookViewModel)dataGrid.SelectedItem).Id;
-                    try
+                    Task task = Task.Run(() => APIClient.PostRequestData("api/Cook/DelElement", new VisitorBindingModel { Id = id }));
+
+                    task.ContinueWith((prevTask) => MessageBox.Show("Запись удалена. Обновите список", "Успех", MessageBoxButton.OK, MessageBoxImage.Information),
+                    TaskContinuationOptions.OnlyOnRanToCompletion);
+
+                    task.ContinueWith((prevTask) =>
                     {
-                        var response = APIClient.PostRequest("api/Cook/DelElement", new CookBindingModel { Id = id });
-                        if (!response.Result.IsSuccessStatusCode)
+                        var ex = (Exception)prevTask.Exception;
+                        while (ex.InnerException != null)
                         {
-                            throw new Exception(APIClient.GetError(response));
+                            ex = ex.InnerException;
                         }
-                    }
-                    catch (Exception ex)
-                    {
                         MessageBox.Show(ex.Message, "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-                    }
-                    LoadData();
+                    }, TaskContinuationOptions.OnlyOnFaulted);
                 }
             }
         }

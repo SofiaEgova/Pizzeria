@@ -38,21 +38,13 @@ namespace PizzeriaWpf
         {
             try
             {
-                var response = APIClient.GetRequest("api/Ingredient/GetList");
-                if (response.Result.IsSuccessStatusCode)
-                {
-                    List<IngredientViewModel> list = APIClient.GetElement<List<IngredientViewModel>>(response);
-                    if (list != null)
+                List<IngredientViewModel> list = Task.Run(() => APIClient.GetRequestData<List<IngredientViewModel>>("api/Ingredient/GetList")).Result;
+                if (list != null)
                     {
                         dataGrid.ItemsSource = list;
                     dataGrid.Columns[0].Visibility = Visibility.Hidden;
                     dataGrid.Columns[1].Width = dataGrid.Width - 8;
                     }
-                }
-                else
-                {
-                    throw new Exception(APIClient.GetError(response));
-                }
             }
             catch (Exception ex)
             {
@@ -89,19 +81,21 @@ namespace PizzeriaWpf
                 if (MessageBox.Show("Удалить запись", "Вопрос", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
                 {
                     int id = ((IngredientViewModel)dataGrid.SelectedItem).Id;
-                    try
+
+                    Task task = Task.Run(() => APIClient.PostRequestData("api/Ingredient/DelElement", new VisitorBindingModel { Id = id }));
+
+                    task.ContinueWith((prevTask) => MessageBox.Show("Запись удалена. Обновите список", "Успех", MessageBoxButton.OK, MessageBoxImage.Information),
+                    TaskContinuationOptions.OnlyOnRanToCompletion);
+
+                    task.ContinueWith((prevTask) =>
                     {
-                        var response = APIClient.PostRequest("api/Ingredient/DelElement", new VisitorBindingModel { Id = id });
-                        if (!response.Result.IsSuccessStatusCode)
+                        var ex = (Exception)prevTask.Exception;
+                        while (ex.InnerException != null)
                         {
-                            throw new Exception(APIClient.GetError(response));
+                            ex = ex.InnerException;
                         }
-                    }
-                    catch (Exception ex)
-                    {
                         MessageBox.Show(ex.Message, "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-                    }
-                    LoadData();
+                    }, TaskContinuationOptions.OnlyOnFaulted);
                 }
             }
         }

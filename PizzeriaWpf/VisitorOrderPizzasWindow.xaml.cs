@@ -59,32 +59,28 @@ namespace PizzeriaWpf
             }
             try
             {
-                Microsoft.Reporting.WinForms.ReportParameter parameter =
-                    new Microsoft.Reporting.WinForms.ReportParameter("ReportParameterPeriod",
+                Microsoft.Reporting.WinForms.ReportParameter parameter = new Microsoft.Reporting.WinForms.ReportParameter("ReportParameterPeriod",
                                             "c " + dateTimePickerFrom.SelectedDate.ToString() +
                                             " по " + dateTimePickerTo.SelectedDate.ToString());
                 _reportViewer.LocalReport.SetParameters(parameter);
 
-                var response = APIClient.PostRequest("api/Report/GetVisitorOrderPizzas", new ReportBindingModel
-                {
-                    DateFrom = dateTimePickerFrom.SelectedDate,
-                    DateTo = dateTimePickerTo.SelectedDate
-                });
-                if (response.Result.IsSuccessStatusCode)
-                {
-                    var dataSource = APIClient.GetElement<List<VisitorOrderPizzasModel>>(response);
-                    Microsoft.Reporting.WinForms.ReportDataSource source = new Microsoft.Reporting.WinForms.ReportDataSource("DataSetOrders", dataSource);
-                    _reportViewer.LocalReport.DataSources.Add(source);
-                }
-                else
-                {
-                    throw new Exception(APIClient.GetError(response));
-                }
+                var dataSource = Task.Run(() => APIClient.PostRequestData<ReportBindingModel, List<VisitorOrderPizzasModel>>("api/Report/GetVisitorOrderPizzas",
+                    new ReportBindingModel
+                    {
+                        DateFrom = dateTimePickerFrom.SelectedDate,
+                        DateTo = dateTimePickerTo.SelectedDate
+                    })).Result;
+                Microsoft.Reporting.WinForms.ReportDataSource source = new Microsoft.Reporting.WinForms.ReportDataSource("DataSetOrders", dataSource);
+                _reportViewer.LocalReport.DataSources.Add(source);
 
                 _reportViewer.RefreshReport();
             }
             catch (Exception ex)
             {
+                while (ex.InnerException != null)
+                {
+                    ex = ex.InnerException;
+                }
                 MessageBox.Show(ex.Message, "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
@@ -103,27 +99,26 @@ namespace PizzeriaWpf
             };
             if (sfd.ShowDialog() == true)
             {
-                try
+                string fileName = sfd.FileName;
+                Task task = Task.Run(() => APIClient.PostRequestData("api/Report/SaveVisitorOrderPizzas", new ReportBindingModel
                 {
-                    var response = APIClient.PostRequest("api/Report/SaveVisitorOrderPizzas", new ReportBindingModel
-                    {
-                        FileName = sfd.FileName,
-                        DateFrom = dateTimePickerFrom.SelectedDate,
-                        DateTo = dateTimePickerTo.SelectedDate
-                    });
-                    if (response.Result.IsSuccessStatusCode)
-                    {
-                        MessageBox.Show("Выполнено", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
-                    }
-                    else
-                    {
-                        throw new Exception(APIClient.GetError(response));
-                    }
-                }
-                catch (Exception ex)
+                    FileName = fileName,
+                    DateFrom = dateTimePickerFrom.SelectedDate,
+                    DateTo = dateTimePickerTo.SelectedDate
+                }));
+
+                task.ContinueWith((prevTask) => MessageBox.Show("Список заказов сохранен", "Успех", MessageBoxButton.OK, MessageBoxImage.Information),
+                TaskContinuationOptions.OnlyOnRanToCompletion);
+
+                task.ContinueWith((prevTask) =>
                 {
+                    var ex = (Exception)prevTask.Exception;
+                    while (ex.InnerException != null)
+                    {
+                        ex = ex.InnerException;
+                    }
                     MessageBox.Show(ex.Message, "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
+                }, TaskContinuationOptions.OnlyOnFaulted);
             }
         }
     }

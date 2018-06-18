@@ -39,19 +39,15 @@ namespace PizzeriaWpf
             {
                 try
                 {
-                    var response = APIClient.GetRequest("api/Visitor/Get/" + id.Value);
-                    if (response.Result.IsSuccessStatusCode)
-                    {
-                        var client = APIClient.GetElement<VisitorViewModel>(response);
-                        textBoxFIO.Text = client.VisitorFIO;
-                    }
-                    else
-                    {
-                        throw new Exception(APIClient.GetError(response));
-                    }
+                    var visitor = Task.Run(() => APIClient.GetRequestData<VisitorViewModel>("api/Visitor/Get/" + id.Value)).Result;
+                    textBoxFIO.Text = visitor.VisitorFIO;
                 }
                 catch (Exception ex)
                 {
+                    while (ex.InnerException != null)
+                    {
+                        ex = ex.InnerException;
+                    }
                     MessageBox.Show(ex.Message, "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
@@ -64,39 +60,37 @@ namespace PizzeriaWpf
                 MessageBox.Show("Заполните ФИО", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
-            try
+            string fio = textBoxFIO.Text;
+            Task task;
+            if (id.HasValue)
             {
-                Task<HttpResponseMessage> response;
-                if (id.HasValue)
+                task = Task.Run(() => APIClient.PostRequestData("api/Visitor/UpdElement", new VisitorBindingModel
                 {
-                    response = APIClient.PostRequest("api/Visitor/UpdElement", new VisitorBindingModel
-                    {
-                        Id = id.Value,
-                        VisitorFIO = textBoxFIO.Text
-                    });
-                }
-                else
-                {
-                    response = APIClient.PostRequest("api/Visitor/AddElement", new VisitorBindingModel
-                    {
-                        VisitorFIO = textBoxFIO.Text
-                    });
-                }
-                if (response.Result.IsSuccessStatusCode)
-                {
-                    MessageBox.Show("Сохранение прошло успешно", "Сообщение", MessageBoxButton.OK, MessageBoxImage.Information);
-                    DialogResult = true;
-                    Close();
-                }
-                else
-                {
-                    throw new Exception(APIClient.GetError(response));
-                }
+                    Id = id.Value,
+                    VisitorFIO = fio
+                }));
             }
-            catch (Exception ex)
+            else
             {
+                task = Task.Run(() => APIClient.PostRequestData("api/Visitor/AddElement", new VisitorBindingModel
+                {
+                    VisitorFIO = fio
+                }));
+            }
+
+            task.ContinueWith((prevTask) => MessageBox.Show("Сохранение прошло успешно. Обновите список", "Сообщение", MessageBoxButton.OK, MessageBoxImage.Information),
+                TaskContinuationOptions.OnlyOnRanToCompletion);
+            task.ContinueWith((prevTask) =>
+            {
+                var ex = (Exception)prevTask.Exception;
+                while (ex.InnerException != null)
+                {
+                    ex = ex.InnerException;
+                }
                 MessageBox.Show(ex.Message, "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
+            }, TaskContinuationOptions.OnlyOnFaulted);
+
+            Close();
         }
 
         private void buttonCancel_Click(object sender, RoutedEventArgs e)

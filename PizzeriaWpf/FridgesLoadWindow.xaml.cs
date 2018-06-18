@@ -37,25 +37,23 @@ namespace PizzeriaWpf
             };
             if (sfd.ShowDialog() == true)
             {
-                try
+                string fileName = sfd.FileName;
+                Task task = Task.Run(() => APIClient.PostRequestData("api/Report/SaveFridgesLoad", new ReportBindingModel
                 {
-                    var response = APIClient.PostRequest("api/Report/SaveFridgesLoad", new ReportBindingModel
-                    {
-                        FileName = sfd.FileName
-                    });
-                    if (response.Result.IsSuccessStatusCode)
-                    {
-                        MessageBox.Show("Выполнено", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
-                    }
-                    else
-                    {
-                        throw new Exception(APIClient.GetError(response));
-                    }
-                }
-                catch (Exception ex)
+                    FileName = fileName
+                }));
+
+                task.ContinueWith((prevTask) => MessageBox.Show("Выполнено", "Сообщение", MessageBoxButton.OK, MessageBoxImage.Information),
+                    TaskContinuationOptions.OnlyOnRanToCompletion);
+                task.ContinueWith((prevTask) =>
                 {
+                    var ex = (Exception)prevTask.Exception;
+                    while (ex.InnerException != null)
+                    {
+                        ex = ex.InnerException;
+                    }
                     MessageBox.Show(ex.Message, "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
+                }, TaskContinuationOptions.OnlyOnFaulted);
             }
         }
 
@@ -63,13 +61,10 @@ namespace PizzeriaWpf
         {
             try
             {
-                var response = APIClient.GetRequest("api/Report/GetFridgessLoad");
-                if (response.Result.IsSuccessStatusCode)
-                {
                     dataGrid.Items.Clear();
-                    foreach (var elem in APIClient.GetElement<List<FridgesLoadViewModel>>(response))
-                    {
-                        dataGrid.Items.Add(new object[] { elem.FridgeName, "", "" });
+                foreach (var elem in Task.Run(() => APIClient.GetRequestData<List<FridgesLoadViewModel>>("api/Report/GetFridgessLoad")).Result)
+                {
+                    dataGrid.Items.Add(new object[] { elem.FridgeName, "", "" });
                         foreach (var listElem in elem.Ingredients)
                         {
                             dataGrid.Items.Add(new object[] { "", listElem.Item1, listElem.Item2 });
@@ -77,10 +72,13 @@ namespace PizzeriaWpf
                         dataGrid.Items.Add(new object[] { "Итого", "", elem.TotalCount });
                         dataGrid.Items.Add(new object[] { });
                     }
-                }
             }
             catch (Exception ex)
             {
+                while (ex.InnerException != null)
+                {
+                    ex = ex.InnerException;
+                }
                 MessageBox.Show(ex.Message, "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
