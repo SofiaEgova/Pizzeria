@@ -15,5 +15,9 @@ namespace PizzeriaModel
         public int IngredientId { get; set; }
 
         public int Count { get; set; }
+
+        public virtual Fridge Fridge { get; set; }
+
+        public virtual Ingredient Ingredient { get; set; }
     }
 }
