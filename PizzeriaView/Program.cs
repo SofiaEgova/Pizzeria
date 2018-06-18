@@ -8,8 +8,6 @@ using System.Data.Entity;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using Unity;
-using Unity.Lifetime;
 
 namespace PizzeriaView
 {
@@ -21,26 +19,10 @@ namespace PizzeriaView
         [STAThread]
         static void Main()
         {
-            var container = BuildUnityContainer();
-
+            APIClient.Connect();
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(container.Resolve<FormMain>());
-        }
-
-        public static IUnityContainer BuildUnityContainer()
-        {
-            var currentContainer = new UnityContainer();
-            currentContainer.RegisterType<DbContext, PizzeriaDbContext>(new HierarchicalLifetimeManager());
-            currentContainer.RegisterType<IVisitorService, VisitorServiceBD>(new HierarchicalLifetimeManager());
-            currentContainer.RegisterType<IIngredientService, IngredientServiceBD>(new HierarchicalLifetimeManager());
-            currentContainer.RegisterType<ICookService, CookServiceBD>(new HierarchicalLifetimeManager());
-            currentContainer.RegisterType<IPizzaService, PizzaServiceBD>(new HierarchicalLifetimeManager());
-            currentContainer.RegisterType<IFridgeService, FridgeServiceBD>(new HierarchicalLifetimeManager());
-            currentContainer.RegisterType<IMainService, MainServiceBD>(new HierarchicalLifetimeManager());
-            currentContainer.RegisterType<IReportService, ReportServiceBD>(new HierarchicalLifetimeManager());
-
-            return currentContainer;
+            Application.Run(new FormMain());
         }
     }
 }

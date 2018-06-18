@@ -1,36 +1,24 @@
 ﻿using PizzeriaService.BindingModels;
-using PizzeriaService.Interfaces;
 using PizzeriaService.ViewModels;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
+using System.Net.Http;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using Unity;
 
 namespace PizzeriaView
 {
     public partial class FormPizza : Form
     {
-        [Unity.Attributes.Dependency]
-        public new IUnityContainer Container { get; set; }
-
         public int Id { set { id = value; } }
-
-        private readonly IPizzaService service;
 
         private int? id;
 
-        private List<PizzaIngredientViewModel> pizzaIngredients;
+        private List<PizzaIngredientViewModel> PizzaIngredients;
 
-        public FormPizza(IPizzaService service)
+        public FormPizza()
         {
             InitializeComponent();
-            this.service = service;
         }
 
         private void FormPizza_Load(object sender, EventArgs e)
@@ -39,13 +27,18 @@ namespace PizzeriaView
             {
                 try
                 {
-                    PizzaViewModel view = service.GetElement(id.Value);
-                    if (view != null)
+                    var response = APIClient.GetRequest("api/Pizza/Get/" + id.Value);
+                    if (response.Result.IsSuccessStatusCode)
                     {
-                        textBoxName.Text = view.PizzaName;
-                        textBoxPrice.Text = view.Price.ToString();
-                        pizzaIngredients = view.PizzaIngredients;
+                        var Pizza = APIClient.GetElement<PizzaViewModel>(response);
+                        textBoxName.Text = Pizza.PizzaName;
+                        textBoxPrice.Text = Pizza.Price.ToString();
+                        PizzaIngredients = Pizza.PizzaIngredients;
                         LoadData();
+                    }
+                    else
+                    {
+                        throw new Exception(APIClient.GetError(response));
                     }
                 }
                 catch (Exception ex)
@@ -55,7 +48,7 @@ namespace PizzeriaView
             }
             else
             {
-                pizzaIngredients = new List<PizzaIngredientViewModel>();
+                PizzaIngredients = new List<PizzaIngredientViewModel>();
             }
         }
 
@@ -63,10 +56,10 @@ namespace PizzeriaView
         {
             try
             {
-                if (pizzaIngredients != null)
+                if (PizzaIngredients != null)
                 {
                     dataGridView.DataSource = null;
-                    dataGridView.DataSource = pizzaIngredients;
+                    dataGridView.DataSource = PizzaIngredients;
                     dataGridView.Columns[0].Visible = false;
                     dataGridView.Columns[1].Visible = false;
                     dataGridView.Columns[2].Visible = false;
@@ -81,7 +74,7 @@ namespace PizzeriaView
 
         private void buttonAdd_Click(object sender, EventArgs e)
         {
-            var form = Container.Resolve<FormPizzaIngredient>();
+            var form = new FormPizzaIngredient();
             if (form.ShowDialog() == DialogResult.OK)
             {
                 if (form.Model != null)
@@ -90,7 +83,7 @@ namespace PizzeriaView
                     {
                         form.Model.PizzaId = id.Value;
                     }
-                    pizzaIngredients.Add(form.Model);
+                    PizzaIngredients.Add(form.Model);
                 }
                 LoadData();
             }
@@ -100,11 +93,11 @@ namespace PizzeriaView
         {
             if (dataGridView.SelectedRows.Count == 1)
             {
-                var form = Container.Resolve<FormPizzaIngredient>();
-                form.Model = pizzaIngredients[dataGridView.SelectedRows[0].Cells[0].RowIndex];
+                var form = new FormPizzaIngredient();
+                form.Model = PizzaIngredients[dataGridView.SelectedRows[0].Cells[0].RowIndex];
                 if (form.ShowDialog() == DialogResult.OK)
                 {
-                    pizzaIngredients[dataGridView.SelectedRows[0].Cells[0].RowIndex] = form.Model;
+                    PizzaIngredients[dataGridView.SelectedRows[0].Cells[0].RowIndex] = form.Model;
                     LoadData();
                 }
             }
@@ -118,7 +111,7 @@ namespace PizzeriaView
                 {
                     try
                     {
-                        pizzaIngredients.RemoveAt(dataGridView.SelectedRows[0].Cells[0].RowIndex);
+                        PizzaIngredients.RemoveAt(dataGridView.SelectedRows[0].Cells[0].RowIndex);
                     }
                     catch (Exception ex)
                     {
@@ -146,46 +139,54 @@ namespace PizzeriaView
                 MessageBox.Show("Заполните цену", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
-            if (pizzaIngredients == null || pizzaIngredients.Count == 0)
+            if (PizzaIngredients == null || PizzaIngredients.Count == 0)
             {
                 MessageBox.Show("Заполните компоненты", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
             try
             {
-                List<PizzaIngredientBindingModel> productComponentBM = new List<PizzaIngredientBindingModel>();
-                for (int i = 0; i < pizzaIngredients.Count; ++i)
+                List<PizzaIngredientBindingModel> PizzaIngredientBM = new List<PizzaIngredientBindingModel>();
+                for (int i = 0; i < PizzaIngredients.Count; ++i)
                 {
-                    productComponentBM.Add(new PizzaIngredientBindingModel
+                    PizzaIngredientBM.Add(new PizzaIngredientBindingModel
                     {
-                        Id = pizzaIngredients[i].Id,
-                        PizzaId = pizzaIngredients[i].PizzaId,
-                        IngredientId = pizzaIngredients[i].IngredientId,
-                        Count = pizzaIngredients[i].Count
+                        Id = PizzaIngredients[i].Id,
+                        PizzaId = PizzaIngredients[i].PizzaId,
+                        IngredientId = PizzaIngredients[i].IngredientId,
+                        Count = PizzaIngredients[i].Count
                     });
                 }
+                Task<HttpResponseMessage> response;
                 if (id.HasValue)
                 {
-                    service.UpdElement(new PizzaBindingModel
+                    response = APIClient.PostRequest("api/Pizza/UpdElement", new PizzaBindingModel
                     {
                         Id = id.Value,
                         PizzaName = textBoxName.Text,
                         Price = Convert.ToInt32(textBoxPrice.Text),
-                        PizzaIngredients = productComponentBM
+                        PizzaIngredients = PizzaIngredientBM
                     });
                 }
                 else
                 {
-                    service.AddElement(new PizzaBindingModel
+                    response = APIClient.PostRequest("api/Pizza/AddElement", new PizzaBindingModel
                     {
                         PizzaName = textBoxName.Text,
                         Price = Convert.ToInt32(textBoxPrice.Text),
-                        PizzaIngredients = productComponentBM
+                        PizzaIngredients = PizzaIngredientBM
                     });
                 }
-                MessageBox.Show("Сохранение прошло успешно", "Сообщение", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                DialogResult = DialogResult.OK;
-                Close();
+                if (response.Result.IsSuccessStatusCode)
+                {
+                    MessageBox.Show("Сохранение прошло успешно", "Сообщение", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    DialogResult = DialogResult.OK;
+                    Close();
+                }
+                else
+                {
+                    throw new Exception(APIClient.GetError(response));
+                }
             }
             catch (Exception ex)
             {

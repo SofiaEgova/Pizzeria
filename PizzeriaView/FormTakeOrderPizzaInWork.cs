@@ -10,54 +10,20 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using Unity;
 
 namespace PizzeriaView
 {
     public partial class FormTakeOrderPizzaInWork : Form
     {
-        [Unity.Attributes.Dependency]
-        public new IUnityContainer Container { get; set; }
-
         public int Id { set { id = value; } }
-
-        private readonly ICookService serviceС;
-
-        private readonly IMainService serviceM;
 
         private int? id;
 
-        public FormTakeOrderPizzaInWork(ICookService serviceС, IMainService serviceM)
+        public FormTakeOrderPizzaInWork()
         {
             InitializeComponent();
-            this.serviceС = serviceС;
-            this.serviceM = serviceM;
         }
-
-        private void FormTakeOrderPizzaInWork_Load(object sender, EventArgs e)
-        {
-            try
-            {
-                if (!id.HasValue)
-                {
-                    MessageBox.Show("Не указан заказ", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    Close();
-                }
-                List<CookViewModel> listС = serviceС.GetList();
-                if (listС != null)
-                {
-                    comboBoxCook.DisplayMember = "CookFIO";
-                    comboBoxCook.ValueMember = "Id";
-                    comboBoxCook.DataSource = listС;
-                    comboBoxCook.SelectedItem = null;
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message, "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-
+        
         private void buttonSave_Click(object sender, EventArgs e)
         {
             if (comboBoxCook.SelectedValue == null)
@@ -67,14 +33,21 @@ namespace PizzeriaView
             }
             try
             {
-                serviceM.TakeOrderPizzaInWork(new OrderPizzaBindingModel
+                var response = APIClient.PostRequest("api/Main/TakeOrderPizzaInWork", new OrderPizzaBindingModel
                 {
                     Id = id.Value,
                     CookId = Convert.ToInt32(comboBoxCook.SelectedValue)
                 });
-                MessageBox.Show("Сохранение прошло успешно", "Сообщение", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                DialogResult = DialogResult.OK;
-                Close();
+                if (response.Result.IsSuccessStatusCode)
+                {
+                    MessageBox.Show("Сохранение прошло успешно", "Сообщение", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    DialogResult = DialogResult.OK;
+                    Close();
+                }
+                else
+                {
+                    throw new Exception(APIClient.GetError(response));
+                }
             }
             catch (Exception ex)
             {
@@ -86,6 +59,38 @@ namespace PizzeriaView
         {
             DialogResult = DialogResult.Cancel;
             Close();
+        }
+
+        private void FormTakeOrderPizzaInWork_Load(object sender, EventArgs e)
+        {
+            try
+            {
+                if (!id.HasValue)
+                {
+                    MessageBox.Show("Не указан заказ", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    Close();
+                }
+                var response = APIClient.GetRequest("api/Cook/GetList");
+                if (response.Result.IsSuccessStatusCode)
+                {
+                    List<CookViewModel> list = APIClient.GetElement<List<CookViewModel>>(response);
+                    if (list != null)
+                    {
+                        comboBoxCook.DisplayMember = "CookFIO";
+                        comboBoxCook.ValueMember = "Id";
+                        comboBoxCook.DataSource = list;
+                        comboBoxCook.SelectedItem = null;
+                    }
+                }
+                else
+                {
+                    throw new Exception(APIClient.GetError(response));
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
     }
 }

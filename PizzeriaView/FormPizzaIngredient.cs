@@ -1,46 +1,36 @@
-﻿using PizzeriaService.Interfaces;
-using PizzeriaService.ViewModels;
+﻿using PizzeriaService.ViewModels;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
-using Unity;
 
 namespace PizzeriaView
 {
     public partial class FormPizzaIngredient : Form
     {
-        [Unity.Attributes.Dependency]
-        public new IUnityContainer Container { get; set; }
-
         public PizzaIngredientViewModel Model { set { model = value; } get { return model; } }
-
-        private readonly IIngredientService service;
 
         private PizzaIngredientViewModel model;
 
-        public FormPizzaIngredient(IIngredientService service)
+        public FormPizzaIngredient()
         {
             InitializeComponent();
-            this.service = service;
         }
 
         private void FormPizzaIngredient_Load(object sender, EventArgs e)
         {
             try
             {
-                List<IngredientViewModel> list = service.GetList();
-                if (list != null)
+                var response = APIClient.GetRequest("api/Ingredient/GetList");
+                if (response.Result.IsSuccessStatusCode)
                 {
                     comboBoxIngredient.DisplayMember = "IngredientName";
                     comboBoxIngredient.ValueMember = "Id";
-                    comboBoxIngredient.DataSource = list;
+                    comboBoxIngredient.DataSource = APIClient.GetElement<List<IngredientViewModel>>(response);
                     comboBoxIngredient.SelectedItem = null;
+                }
+                else
+                {
+                    throw new Exception(APIClient.GetError(response));
                 }
             }
             catch (Exception ex)
@@ -64,7 +54,7 @@ namespace PizzeriaView
             }
             if (comboBoxIngredient.SelectedValue == null)
             {
-                MessageBox.Show("Выберите ингредиент", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Выберите компонент", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
             try
