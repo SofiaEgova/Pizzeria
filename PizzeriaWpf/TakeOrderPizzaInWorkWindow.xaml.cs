@@ -14,7 +14,6 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
-using Unity;
 
 namespace PizzeriaWpf
 {
@@ -23,21 +22,12 @@ namespace PizzeriaWpf
     /// </summary>
     public partial class TakeOrderPizzaInWorkWindow : Window
     {
-        [Unity.Attributes.Dependency]
-        public IUnityContainer Container { get; set; }
-
         public int Id { set { id = value; } }
-
-        private readonly ICookService serviceС;
-
-        private readonly IMainService serviceM;
-
         private int? id;
-        public TakeOrderPizzaInWorkWindow(ICookService serviceС, IMainService serviceM)
+
+        public TakeOrderPizzaInWorkWindow()
         {
             InitializeComponent();
-            this.serviceС = serviceС;
-            this.serviceM = serviceM;
             Loaded += TakeOrderPizzaInWorkWindow_Load;
         }
 
@@ -50,13 +40,21 @@ namespace PizzeriaWpf
                     MessageBox.Show("Не указан заказ", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
                     Close();
                 }
-                List<CookViewModel> listС = serviceС.GetList();
-                if (listС != null)
+                var response = APIClient.GetRequest("api/Cook/GetList");
+                if (response.Result.IsSuccessStatusCode)
                 {
-                    comboBoxCook.DisplayMemberPath = "CookFIO";
-                    comboBoxCook.SelectedValuePath = "Id";
-                    comboBoxCook.ItemsSource = listС;
-                    comboBoxCook.SelectedItem = null;
+                    List<CookViewModel> list = APIClient.GetElement<List<CookViewModel>>(response);
+                    if (list != null)
+                    {
+                        comboBoxCook.DisplayMemberPath = "CookFIO";
+                        comboBoxCook.SelectedValuePath = "Id";
+                        comboBoxCook.ItemsSource = list;
+                        comboBoxCook.SelectedItem = null;
+                    }
+                }
+                else
+                {
+                    throw new Exception(APIClient.GetError(response));
                 }
             }
             catch (Exception ex)
@@ -74,14 +72,21 @@ namespace PizzeriaWpf
             }
             try
             {
-                serviceM.TakeOrderPizzaInWork(new OrderPizzaBindingModel
+                var response = APIClient.PostRequest("api/Main/TakeOrderPizzaInWork", new OrderPizzaBindingModel
                 {
                     Id = id.Value,
                     CookId = Convert.ToInt32(comboBoxCook.SelectedValue)
                 });
-                MessageBox.Show("Сохранение прошло успешно", "Сообщение", MessageBoxButton.OK, MessageBoxImage.Information);
-                DialogResult = true;
-                Close();
+                if (response.Result.IsSuccessStatusCode)
+                {
+                    MessageBox.Show("Сохранение прошло успешно", "Сообщение", MessageBoxButton.OK, MessageBoxImage.Information);
+                    DialogResult = true;
+                    Close();
+                }
+                else
+                {
+                    throw new Exception(APIClient.GetError(response));
+                }
             }
             catch (Exception ex)
             {

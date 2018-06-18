@@ -1,4 +1,5 @@
-﻿using PizzeriaService.Interfaces;
+﻿using PizzeriaService.BindingModels;
+using PizzeriaService.Interfaces;
 using PizzeriaService.ViewModels;
 using System;
 using System.Collections.Generic;
@@ -13,7 +14,6 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
-using Unity;
 
 namespace PizzeriaWpf
 {
@@ -22,15 +22,10 @@ namespace PizzeriaWpf
     /// </summary>
     public partial class CooksWindow : Window
     {
-        [Unity.Attributes.Dependency]
-        public IUnityContainer Container { get; set; }
 
-        private readonly ICookService service;
-
-        public CooksWindow(ICookService service)
+        public CooksWindow()
         {
             InitializeComponent();
-            this.service = service;
             Loaded += CooksWindow_Load;
         }
 
@@ -43,12 +38,20 @@ namespace PizzeriaWpf
         {
             try
             {
-                List<CookViewModel> list = service.GetList();
-                if (list != null)
+                var response = APIClient.GetRequest("api/Cook/GetList");
+                if (response.Result.IsSuccessStatusCode)
                 {
-                    dataGrid.ItemsSource = list;
+                    List<CookViewModel> list = APIClient.GetElement<List<CookViewModel>>(response);
+                    if (list != null)
+                    {
+                        dataGrid.ItemsSource = list;
                     dataGrid.Columns[0].Visibility = Visibility.Hidden;
                     dataGrid.Columns[1].Width = dataGrid.Width - 8;
+                    }
+                }
+                else
+                {
+                    throw new Exception(APIClient.GetError(response));
                 }
             }
             catch (Exception ex)
@@ -59,7 +62,7 @@ namespace PizzeriaWpf
 
         private void buttonAdd_Click(object sender, RoutedEventArgs e)
         {
-            var form = Container.Resolve<CookWindow>();
+            var form = new CookWindow();
             if (form.ShowDialog() == true)
             {
                 LoadData();
@@ -70,7 +73,7 @@ namespace PizzeriaWpf
         {
             if (dataGrid.SelectedItem != null)
             {
-                var form = Container.Resolve<CookWindow>();
+                var form = new CookWindow();
                 form.Id = ((CookViewModel)dataGrid.SelectedItem).Id;
                 if (form.ShowDialog() == true)
                 {
@@ -88,7 +91,11 @@ namespace PizzeriaWpf
                     int id = ((CookViewModel)dataGrid.SelectedItem).Id;
                     try
                     {
-                        service.DelElement(id);
+                        var response = APIClient.PostRequest("api/Cook/DelElement", new CookBindingModel { Id = id });
+                        if (!response.Result.IsSuccessStatusCode)
+                        {
+                            throw new Exception(APIClient.GetError(response));
+                        }
                     }
                     catch (Exception ex)
                     {

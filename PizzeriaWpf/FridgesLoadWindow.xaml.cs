@@ -1,6 +1,7 @@
 ﻿using Microsoft.Win32;
 using PizzeriaService.BindingModels;
 using PizzeriaService.Interfaces;
+using PizzeriaService.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,7 +15,6 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
-using Unity;
 
 namespace PizzeriaWpf
 {
@@ -23,15 +23,9 @@ namespace PizzeriaWpf
     /// </summary>
     public partial class FridgesLoadWindow : Window
     {
-        [Unity.Attributes.Dependency]
-        public IUnityContainer Container { get; set; }
-
-        private readonly IReportService service;
-
-        public FridgesLoadWindow(IReportService service)
+        public FridgesLoadWindow()
         {
             InitializeComponent();
-            this.service = service;
             Loaded += FridgesLoadWindow_Load;
         }
 
@@ -45,11 +39,18 @@ namespace PizzeriaWpf
             {
                 try
                 {
-                    service.SaveFridgesLoad(new ReportBindingModel
+                    var response = APIClient.PostRequest("api/Report/SaveFridgesLoad", new ReportBindingModel
                     {
                         FileName = sfd.FileName
                     });
-                    MessageBox.Show("Выполнено", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+                    if (response.Result.IsSuccessStatusCode)
+                    {
+                        MessageBox.Show("Выполнено", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                    else
+                    {
+                        throw new Exception(APIClient.GetError(response));
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -62,12 +63,11 @@ namespace PizzeriaWpf
         {
             try
             {
-                var dict = service.GetFridgesLoad();
-                if (dict != null)
+                var response = APIClient.GetRequest("api/Report/GetFridgessLoad");
+                if (response.Result.IsSuccessStatusCode)
                 {
                     dataGrid.Items.Clear();
-
-                    foreach (var elem in dict)
+                    foreach (var elem in APIClient.GetElement<List<FridgesLoadViewModel>>(response))
                     {
                         dataGrid.Items.Add(new object[] { elem.FridgeName, "", "" });
                         foreach (var listElem in elem.Ingredients)

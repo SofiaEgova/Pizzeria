@@ -13,7 +13,6 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
-using Unity;
 
 namespace PizzeriaWpf
 {
@@ -22,33 +21,32 @@ namespace PizzeriaWpf
     /// </summary>
     public partial class PizzaIngredientWindow : Window
     {
-        [Unity.Attributes.Dependency]
-        public IUnityContainer Container { get; set; }
-
-        private readonly IIngredientService service;
 
         public PizzaIngredientViewModel Model { set { model = value; } get { return model; } }
 
         private PizzaIngredientViewModel model;
 
-        public PizzaIngredientWindow(IIngredientService service)
+        public PizzaIngredientWindow()
         {
             InitializeComponent();
-            this.service = service;
             Loaded += PizzaIngredientWindow_Load;
         }
 
         private void PizzaIngredientWindow_Load(object sender, EventArgs e)
         {
-            List<IngredientViewModel> list = service.GetList();
             try
             {
-                if (list != null)
+                var response = APIClient.GetRequest("api/Ingredient/GetList");
+                if (response.Result.IsSuccessStatusCode)
                 {
                     comboBox.DisplayMemberPath = "IngredientName";
                     comboBox.SelectedValuePath = "Id";
-                    comboBox.ItemsSource = list;
+                    comboBox.ItemsSource = APIClient.GetElement<List<IngredientViewModel>>(response);
                     comboBox.SelectedItem = null;
+                }
+                else
+                {
+                    throw new Exception(APIClient.GetError(response));
                 }
             }
             catch (Exception ex)

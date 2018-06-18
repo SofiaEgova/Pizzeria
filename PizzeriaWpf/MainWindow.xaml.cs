@@ -16,7 +16,6 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-using Unity;
 
 namespace PizzeriaWpf
 {
@@ -26,33 +25,32 @@ namespace PizzeriaWpf
     public partial class MainWindow : Window
     {
 
-        [Unity.Attributes.Dependency]
-        public IUnityContainer Container { get; set; }
-
-        private readonly IMainService service;
-
-        private readonly IReportService reportService;
-
-        public MainWindow(IMainService service, IReportService reportService)
+        public MainWindow()
         {
             InitializeComponent();
-            this.service = service;
-            this.reportService = reportService;
         }
         
         private void LoadData()
         {
             try
             {
-                List<OrderPizzaViewModel> list = service.GetList();
-                if (list != null)
+                var response = APIClient.GetRequest("api/Main/GetList");
+                if (response.Result.IsSuccessStatusCode)
                 {
-                    dataGridVeiw.ItemsSource = list;
+                    List<OrderPizzaViewModel> list = APIClient.GetElement<List<OrderPizzaViewModel>>(response);
+                    if (list != null)
+                    {
+                        dataGridVeiw.ItemsSource = list;
                     dataGridVeiw.Columns[0].Visibility = Visibility.Hidden;
                     dataGridVeiw.Columns[1].Visibility = Visibility.Hidden;
                     dataGridVeiw.Columns[3].Visibility = Visibility.Hidden;
                     dataGridVeiw.Columns[5].Visibility = Visibility.Hidden;
                     dataGridVeiw.Columns[1].Width = DataGridLength.Auto;
+                    }
+                }
+                else
+                {
+                    throw new Exception(APIClient.GetError(response));
                 }
             }
             catch (Exception ex)
@@ -63,43 +61,43 @@ namespace PizzeriaWpf
 
         private void посетителиToolStripMenuItem_Click(object sender, RoutedEventArgs e)
         {
-            var form = Container.Resolve<VisitorsWindow>();
+            var form = new VisitorsWindow();
             form.ShowDialog();
         }
 
         private void ингредиентыToolStripMenuItem_Click(object sender, RoutedEventArgs e)
         {
-            var form = Container.Resolve<IngredientsWindow>();
+            var form = new IngredientsWindow();
             form.ShowDialog();
         }
 
         private void пиццыToolStripMenuItem_Click(object sender, RoutedEventArgs e)
         {
-            var form = Container.Resolve<PizzasWindow>();
+            var form = new PizzasWindow();
             form.ShowDialog();
         }
 
         private void холодильникиToolStripMenuItem_Click(object sender, RoutedEventArgs e)
         {
-            var form = Container.Resolve<FridgesWindow>();
+            var form = new FridgesWindow();
             form.ShowDialog();
         }
 
         private void повараToolStripMenuItem_Click(object sender, RoutedEventArgs e)
         {
-            var form = Container.Resolve<CooksWindow>();
+            var form = new CooksWindow();
             form.ShowDialog();
         }
 
         private void пополнитьХолодильникToolStripMenuItem_Click(object sender, RoutedEventArgs e)
         {
-            var form = Container.Resolve<PutInFridgeWindow>();
+            var form = new PutInFridgeWindow();
             form.ShowDialog();
         }
 
         private void buttonOrderPizza_Click(object sender, RoutedEventArgs e)
         {
-            var form = Container.Resolve<OrderPizzaWindow>();
+            var form = new OrderPizzaWindow();
             form.ShowDialog();
             LoadData();
         }
@@ -108,7 +106,7 @@ namespace PizzeriaWpf
         {
             if (dataGridVeiw.SelectedItem != null)
             {
-                var form = Container.Resolve<TakeOrderPizzaInWorkWindow>();
+                var form = new TakeOrderPizzaInWorkWindow();
                 form.Id = ((OrderPizzaViewModel)dataGridVeiw.SelectedItem).Id;
                 form.ShowDialog();
                 LoadData();
@@ -122,8 +120,18 @@ namespace PizzeriaWpf
                 int id = ((OrderPizzaViewModel)dataGridVeiw.SelectedItem).Id;
                 try
                 {
-                    service.FinishOrderPizza(id);
-                    LoadData();
+                    var response = APIClient.PostRequest("api/Main/FinishOrderPizza", new OrderPizzaBindingModel
+                    {
+                        Id = id
+                    });
+                    if (response.Result.IsSuccessStatusCode)
+                    {
+                        LoadData();
+                    }
+                    else
+                    {
+                        throw new Exception(APIClient.GetError(response));
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -139,8 +147,18 @@ namespace PizzeriaWpf
                 int id = ((OrderPizzaViewModel)dataGridVeiw.SelectedItem).Id;
                 try
                 {
-                    service.PayOrderPizza(id);
-                    LoadData();
+                    var response = APIClient.PostRequest("api/Main/PayOrderPizza", new OrderPizzaBindingModel
+                    {
+                        Id = id
+                    });
+                    if (response.Result.IsSuccessStatusCode)
+                    {
+                        LoadData();
+                    }
+                    else
+                    {
+                        throw new Exception(APIClient.GetError(response));
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -164,11 +182,18 @@ namespace PizzeriaWpf
             {
                 try
                 {
-                    reportService.SavePizzaPrice(new ReportBindingModel
+                    var response = APIClient.PostRequest("api/Report/SaveProductPrice", new ReportBindingModel
                     {
                         FileName = sfd.FileName
                     });
-                    MessageBox.Show("Выполнено", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+                    if (response.Result.IsSuccessStatusCode)
+                    {
+                        MessageBox.Show("Выполнено", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                    else
+                    {
+                        throw new Exception(APIClient.GetError(response));
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -179,13 +204,13 @@ namespace PizzeriaWpf
 
         private void MenuItem_Click_1(object sender, RoutedEventArgs e)
         {
-            var form = Container.Resolve<FridgesLoadWindow>();
+            var form = new FridgesLoadWindow();
             form.ShowDialog();
         }
 
         private void MenuItem_Click_2(object sender, RoutedEventArgs e)
         {
-            var form = Container.Resolve<VisitorOrderPizzasWindow>();
+            var form = new VisitorOrderPizzasWindow();
             form.ShowDialog();
         }
     }

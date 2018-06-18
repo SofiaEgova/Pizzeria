@@ -10,8 +10,6 @@ using System.Data.Entity;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
-using Unity;
-using Unity.Lifetime;
 
 namespace PizzeriaWpf
 {
@@ -25,24 +23,9 @@ namespace PizzeriaWpf
         [STAThread]
         static void Main()
         {
-            var container = BuildUnityContainer();
-
+            APIClient.Connect();
             var application = new App();
-            application.Run(container.Resolve<MainWindow>());
-        }
-
-        public static IUnityContainer BuildUnityContainer()
-        {
-            var currentContainer = new UnityContainer();
-            currentContainer.RegisterType<DbContext, PizzeriaDbContext>(new HierarchicalLifetimeManager());
-            currentContainer.RegisterType<IVisitorService, VisitorServiceBD>(new HierarchicalLifetimeManager());
-            currentContainer.RegisterType<IIngredientService, IngredientServiceBD>(new HierarchicalLifetimeManager());
-            currentContainer.RegisterType<ICookService, CookServiceBD>(new HierarchicalLifetimeManager());
-            currentContainer.RegisterType<IPizzaService, PizzaServiceBD>(new HierarchicalLifetimeManager());
-            currentContainer.RegisterType<IFridgeService, FridgeServiceBD>(new HierarchicalLifetimeManager());
-            currentContainer.RegisterType<IMainService, MainServiceBD>(new HierarchicalLifetimeManager());
-
-            return currentContainer;
+            application.Run(new MainWindow());
         }
     }
 }
