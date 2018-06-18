@@ -33,24 +33,33 @@ namespace PizzeriaView
             }
             try
             {
-                var response = APIClient.PostRequest("api/Main/TakeOrderPizzaInWork", new OrderPizzaBindingModel
+                int cookId = Convert.ToInt32(comboBoxCook.SelectedValue);
+                Task task = Task.Run(() => APIClient.PostRequestData("api/Main/TakeOrderPizzaInWork", new OrderPizzaBindingModel
                 {
                     Id = id.Value,
-                    CookId = Convert.ToInt32(comboBoxCook.SelectedValue)
-                });
-                if (response.Result.IsSuccessStatusCode)
+                    CookId = cookId
+                }));
+
+                task.ContinueWith((prevTask) => MessageBox.Show("Заказ передан в работу. Обновите список", "Сообщение", MessageBoxButtons.OK, MessageBoxIcon.Information),
+                    TaskContinuationOptions.OnlyOnRanToCompletion);
+                task.ContinueWith((prevTask) =>
                 {
-                    MessageBox.Show("Сохранение прошло успешно", "Сообщение", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    DialogResult = DialogResult.OK;
-                    Close();
-                }
-                else
-                {
-                    throw new Exception(APIClient.GetError(response));
-                }
+                    var ex = (Exception)prevTask.Exception;
+                    while (ex.InnerException != null)
+                    {
+                        ex = ex.InnerException;
+                    }
+                    MessageBox.Show(ex.Message, "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }, TaskContinuationOptions.OnlyOnFaulted);
+
+                Close();
             }
             catch (Exception ex)
             {
+                while (ex.InnerException != null)
+                {
+                    ex = ex.InnerException;
+                }
                 MessageBox.Show(ex.Message, "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
@@ -70,25 +79,21 @@ namespace PizzeriaView
                     MessageBox.Show("Не указан заказ", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     Close();
                 }
-                var response = APIClient.GetRequest("api/Cook/GetList");
-                if (response.Result.IsSuccessStatusCode)
+                List<CookViewModel> list = Task.Run(() => APIClient.GetRequestData<List<CookViewModel>>("api/Cook/GetList")).Result;
+                if (list != null)
                 {
-                    List<CookViewModel> list = APIClient.GetElement<List<CookViewModel>>(response);
-                    if (list != null)
-                    {
-                        comboBoxCook.DisplayMember = "CookFIO";
-                        comboBoxCook.ValueMember = "Id";
-                        comboBoxCook.DataSource = list;
-                        comboBoxCook.SelectedItem = null;
-                    }
-                }
-                else
-                {
-                    throw new Exception(APIClient.GetError(response));
+                    comboBoxCook.DisplayMember = "CookFIO";
+                    comboBoxCook.ValueMember = "Id";
+                    comboBoxCook.DataSource = list;
+                    comboBoxCook.SelectedItem = null;
                 }
             }
             catch (Exception ex)
             {
+                while (ex.InnerException != null)
+                {
+                    ex = ex.InnerException;
+                }
                 MessageBox.Show(ex.Message, "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }

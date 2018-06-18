@@ -39,25 +39,36 @@ namespace PizzeriaView
             }
             try
             {
-                var response = APIClient.PostRequest("api/Main/PutIngredientInFridge", new FridgeIngredientBindingModel
+                int ingredientId = Convert.ToInt32(comboBoxIngredient.SelectedValue);
+                int fridgeId = Convert.ToInt32(comboBoxFridge.SelectedValue);
+                int count = Convert.ToInt32(textBoxCount.Text);
+                Task task = Task.Run(() => APIClient.PostRequestData("api/Main/PutIngredientInFridge", new FridgeIngredientBindingModel
                 {
-                    IngredientId = Convert.ToInt32(comboBoxIngredient.SelectedValue),
-                    FridgeId = Convert.ToInt32(comboBoxFridge.SelectedValue),
-                    Count = Convert.ToInt32(textBoxCount.Text)
-                });
-                if (response.Result.IsSuccessStatusCode)
+                    IngredientId = ingredientId,
+                    FridgeId = fridgeId,
+                    Count = count
+                }));
+
+                task.ContinueWith((prevTask) => MessageBox.Show("Холодильник пополнен", "Сообщение", MessageBoxButtons.OK, MessageBoxIcon.Information),
+                    TaskContinuationOptions.OnlyOnRanToCompletion);
+                task.ContinueWith((prevTask) =>
                 {
-                    MessageBox.Show("Сохранение прошло успешно", "Сообщение", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    DialogResult = DialogResult.OK;
-                    Close();
-                }
-                else
-                {
-                    throw new Exception(APIClient.GetError(response));
-                }
+                    var ex = (Exception)prevTask.Exception;
+                    while (ex.InnerException != null)
+                    {
+                        ex = ex.InnerException;
+                    }
+                    MessageBox.Show(ex.Message, "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }, TaskContinuationOptions.OnlyOnFaulted);
+
+                Close();
             }
             catch (Exception ex)
             {
+                while (ex.InnerException != null)
+                {
+                    ex = ex.InnerException;
+                }
                 MessageBox.Show(ex.Message, "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
@@ -72,41 +83,30 @@ namespace PizzeriaView
         {
             try
             {
-                var responseC = APIClient.GetRequest("api/Ingredient/GetList");
-                if (responseC.Result.IsSuccessStatusCode)
+                List<IngredientViewModel> listC = Task.Run(() => APIClient.GetRequestData<List<IngredientViewModel>>("api/Ingredient/GetList")).Result;
+                if (listC != null)
                 {
-                    List<IngredientViewModel> list = APIClient.GetElement<List<IngredientViewModel>>(responseC);
-                    if (list != null)
-                    {
-                        comboBoxIngredient.DisplayMember = "IngredientName";
-                        comboBoxIngredient.ValueMember = "Id";
-                        comboBoxIngredient.DataSource = list;
-                        comboBoxIngredient.SelectedItem = null;
-                    }
+                    comboBoxIngredient.DisplayMember = "IngredientName";
+                    comboBoxIngredient.ValueMember = "Id";
+                    comboBoxIngredient.DataSource = listC;
+                    comboBoxIngredient.SelectedItem = null;
                 }
-                else
+
+                List<FridgeViewModel> listS = Task.Run(() => APIClient.GetRequestData<List<FridgeViewModel>>("api/Fridge/GetList")).Result;
+                if (listS != null)
                 {
-                    throw new Exception(APIClient.GetError(responseC));
-                }
-                var responseS = APIClient.GetRequest("api/Fridge/GetList");
-                if (responseS.Result.IsSuccessStatusCode)
-                {
-                    List<FridgeViewModel> list = APIClient.GetElement<List<FridgeViewModel>>(responseS);
-                    if (list != null)
-                    {
-                        comboBoxFridge.DisplayMember = "FridgeName";
-                        comboBoxFridge.ValueMember = "Id";
-                        comboBoxFridge.DataSource = list;
-                        comboBoxFridge.SelectedItem = null;
-                    }
-                }
-                else
-                {
-                    throw new Exception(APIClient.GetError(responseC));
+                    comboBoxFridge.DisplayMember = "FridgeName";
+                    comboBoxFridge.ValueMember = "Id";
+                    comboBoxFridge.DataSource = listS;
+                    comboBoxFridge.SelectedItem = null;
                 }
             }
             catch (Exception ex)
             {
+                while (ex.InnerException != null)
+                {
+                    ex = ex.InnerException;
+                }
                 MessageBox.Show(ex.Message, "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
