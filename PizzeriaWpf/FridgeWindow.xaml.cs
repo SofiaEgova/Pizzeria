@@ -4,6 +4,7 @@ using PizzeriaService.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -14,7 +15,6 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
-using Unity;
 
 namespace PizzeriaWpf
 {
@@ -24,19 +24,13 @@ namespace PizzeriaWpf
     public partial class FridgeWindow : Window
     {
 
-        [Unity.Attributes.Dependency]
-        public IUnityContainer Container { get; set; }
-
         public int Id { set { id = value; } }
-
-        private readonly IFridgeService service;
 
         private int? id;
 
-        public FridgeWindow(IFridgeService service)
+        public FridgeWindow()
         {
             InitializeComponent();
-            this.service = service;
             Loaded += FridgeWindow_Load;
         }
 
@@ -46,15 +40,20 @@ namespace PizzeriaWpf
             {
                 try
                 {
-                    FridgeViewModel view = service.GetElement(id.Value);
-                    if (view != null)
+                    var response = APIClient.GetRequest("api/Fridge/Get/" + id.Value);
+                    if (response.Result.IsSuccessStatusCode)
                     {
-                        textBoxName.Text = view.FridgeName;
-                        dataGrid.ItemsSource = view.FridgeIngredients;
+                        var Fridge = APIClient.GetElement<FridgeViewModel>(response);
+                        textBoxName.Text = Fridge.FridgeName;
+                        dataGrid.ItemsSource = Fridge.FridgeIngredients;
                         dataGrid.Columns[0].Visibility = Visibility.Hidden;
                         dataGrid.Columns[1].Visibility = Visibility.Hidden;
                         dataGrid.Columns[2].Visibility = Visibility.Hidden;
                         dataGrid.Columns[3].Width = dataGrid.Width - 8;
+                    }
+                    else
+                    {
+                        throw new Exception(APIClient.GetError(response));
                     }
                 }
                 catch (Exception ex)
@@ -73,9 +72,10 @@ namespace PizzeriaWpf
             }
             try
             {
+                Task<HttpResponseMessage> response;
                 if (id.HasValue)
                 {
-                    service.UpdElement(new FridgeBindingModel
+                    response = APIClient.PostRequest("api/Fridge/UpdElement", new FridgeBindingModel
                     {
                         Id = id.Value,
                         FridgeName = textBoxName.Text
@@ -83,14 +83,21 @@ namespace PizzeriaWpf
                 }
                 else
                 {
-                    service.AddElement(new FridgeBindingModel
+                    response = APIClient.PostRequest("api/Fridge/AddElement", new FridgeBindingModel
                     {
                         FridgeName = textBoxName.Text
                     });
                 }
-                MessageBox.Show("Сохранение прошло успешно", "Сообщение", MessageBoxButton.OK, MessageBoxImage.Information);
-                DialogResult = true;
-                Close();
+                if (response.Result.IsSuccessStatusCode)
+                {
+                    MessageBox.Show("Сохранение прошло успешно", "Сообщение", MessageBoxButton.OK, MessageBoxImage.Information);
+                    DialogResult = true;
+                    Close();
+                }
+                else
+                {
+                    throw new Exception(APIClient.GetError(response));
+                }
             }
             catch (Exception ex)
             {

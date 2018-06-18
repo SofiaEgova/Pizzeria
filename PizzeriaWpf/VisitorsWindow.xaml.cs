@@ -1,4 +1,5 @@
-﻿using PizzeriaService.Interfaces;
+﻿using PizzeriaService.BindingModels;
+using PizzeriaService.Interfaces;
 using PizzeriaService.ViewModels;
 using System;
 using System.Collections.Generic;
@@ -13,7 +14,6 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
-using Unity;
 
 namespace PizzeriaWpf
 {
@@ -22,15 +22,10 @@ namespace PizzeriaWpf
     /// </summary>
     public partial class VisitorsWindow : Window
     {
-        [Unity.Attributes.Dependency]
-        public IUnityContainer Container { get; set; }
 
-        private readonly IVisitorService service;
-
-        public VisitorsWindow(IVisitorService service)
+        public VisitorsWindow()
         {
             InitializeComponent();
-            this.service = service;
             Loaded += VisitorsWindow_Load;
         }
 
@@ -43,12 +38,20 @@ namespace PizzeriaWpf
         {
             try
             {
-                List<VisitorViewModel> list = service.GetList();
-                if (list != null)
+                var response = APIClient.GetRequest("api/Visitor/GetList");
+                if (response.Result.IsSuccessStatusCode)
                 {
-                    dataGrid.ItemsSource = list;
-                    dataGrid.Columns[0].Visibility = Visibility.Hidden;
-                    dataGrid.Columns[1].Width = dataGrid.Width-8;
+                    List<VisitorViewModel> list = APIClient.GetElement<List<VisitorViewModel>>(response);
+                    if (list != null)
+                    {
+                        dataGrid.ItemsSource = list;
+                        dataGrid.Columns[0].Visibility = Visibility.Hidden;
+                        dataGrid.Columns[1].Width = dataGrid.Width - 8;
+                    }
+                }
+                else
+                {
+                    throw new Exception(APIClient.GetError(response));
                 }
             }
             catch (Exception ex)
@@ -59,7 +62,7 @@ namespace PizzeriaWpf
 
         private void buttonAdd_Click(object sender, RoutedEventArgs e)
         {
-            var form = Container.Resolve<VisitorWindow>();
+            var form = new VisitorWindow();
             if (form.ShowDialog() == true)
             {
                 LoadData();
@@ -70,7 +73,7 @@ namespace PizzeriaWpf
         {
             if (dataGrid.SelectedItem!=null)
             {
-                var form = Container.Resolve<VisitorWindow>();
+                var form = new VisitorWindow();
                 form.Id = ((VisitorViewModel)dataGrid.SelectedItem).Id;
                 if (form.ShowDialog() == true)
                 {
@@ -88,7 +91,11 @@ namespace PizzeriaWpf
                     int id = ((VisitorViewModel)dataGrid.SelectedItem).Id;
                     try
                     {
-                        service.DelElement(id);
+                        var response = APIClient.PostRequest("api/Visitor/DelElement", new VisitorBindingModel { Id = id });
+                        if (!response.Result.IsSuccessStatusCode)
+                        {
+                            throw new Exception(APIClient.GetError(response));
+                        }
                     }
                     catch (Exception ex)
                     {

@@ -14,7 +14,6 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
-using Unity;
 
 namespace PizzeriaWpf
 {
@@ -23,22 +22,9 @@ namespace PizzeriaWpf
     /// </summary>
     public partial class OrderPizzaWindow : Window
     {
-
-        [Unity.Attributes.Dependency]
-        public IUnityContainer Container { get; set; }
-
-        private readonly IVisitorService serviceV;
-
-        private readonly IPizzaService serviceP;
-
-        private readonly IMainService serviceM;
-
-        public OrderPizzaWindow(IVisitorService serviceV, IPizzaService serviceP, IMainService serviceM)
+        public OrderPizzaWindow()
         {
             InitializeComponent();
-            this.serviceV = serviceV;
-            this.serviceP = serviceP;
-            this.serviceM = serviceM;
             Loaded += OrderPizzaWindow_Load;
             comboBoxPizza.SelectionChanged += comboBoxPizza_SelectionChanged;
             comboBoxPizza.SelectionChanged += new SelectionChangedEventHandler(comboBoxPizza_SelectionChanged);
@@ -48,21 +34,37 @@ namespace PizzeriaWpf
         {
             try
             {
-                List<VisitorViewModel> listV = serviceV.GetList();
-                if (listV != null)
+                var responseC = APIClient.GetRequest("api/Visitor/GetList");
+                if (responseC.Result.IsSuccessStatusCode)
                 {
-                    comboBoxVisitor.DisplayMemberPath = "VisitorFIO";
-                    comboBoxVisitor.SelectedValuePath = "Id";
-                    comboBoxVisitor.ItemsSource = listV;
-                    comboBoxVisitor.SelectedItem = null;
+                    List<VisitorViewModel> list = APIClient.GetElement<List<VisitorViewModel>>(responseC);
+                    if (list != null)
+                    {
+                        comboBoxVisitor.DisplayMemberPath = "VisitorFIO";
+                        comboBoxVisitor.SelectedValuePath = "Id";
+                        comboBoxVisitor.ItemsSource = list;
+                        comboBoxVisitor.SelectedItem = null;
+                    }
                 }
-                List<PizzaViewModel> listP = serviceP.GetList();
-                if (listP != null)
+                else
                 {
-                    comboBoxPizza.DisplayMemberPath = "PizzaName";
-                    comboBoxPizza.SelectedValuePath = "Id";
-                    comboBoxPizza.ItemsSource = listP;
-                    comboBoxPizza.SelectedItem = null;
+                    throw new Exception(APIClient.GetError(responseC));
+                }
+                var responseP = APIClient.GetRequest("api/Pizza/GetList");
+                if (responseP.Result.IsSuccessStatusCode)
+                {
+                    List<PizzaViewModel> list = APIClient.GetElement<List<PizzaViewModel>>(responseP);
+                    if (list != null)
+                    {
+                        comboBoxPizza.DisplayMemberPath = "PizzaName";
+                        comboBoxPizza.SelectedValuePath = "Id";
+                        comboBoxPizza.ItemsSource = list;
+                        comboBoxPizza.SelectedItem = null;
+                    }
+                }
+                else
+                {
+                    throw new Exception(APIClient.GetError(responseP));
                 }
             }
             catch (Exception ex)
@@ -78,9 +80,17 @@ namespace PizzeriaWpf
                 try
                 {
                     int id = Convert.ToInt32(comboBoxPizza.SelectedValue);
-                    PizzaViewModel pizza = serviceP.GetElement(id);
-                    int count = Convert.ToInt32(textBoxCount.Text);
-                    textBoxSum.Text = (count * pizza.Price).ToString();
+                    var responseP = APIClient.GetRequest("api/Pizza/Get/" + id);
+                    if (responseP.Result.IsSuccessStatusCode)
+                    {
+                        PizzaViewModel Pizza = APIClient.GetElement<PizzaViewModel>(responseP);
+                        int count = Convert.ToInt32(textBoxCount.Text);
+                        textBoxSum.Text = (count * (int)Pizza.Price).ToString();
+                    }
+                    else
+                    {
+                        throw new Exception(APIClient.GetError(responseP));
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -108,16 +118,23 @@ namespace PizzeriaWpf
             }
             try
             {
-                serviceM.CreateOrderPizza(new OrderPizzaBindingModel
+                var response = APIClient.PostRequest("api/Main/CreateOrderPizza", new OrderPizzaBindingModel
                 {
                     VisitorId = Convert.ToInt32(comboBoxVisitor.SelectedValue),
                     PizzaId = Convert.ToInt32(comboBoxPizza.SelectedValue),
                     Count = Convert.ToInt32(textBoxCount.Text),
                     Sum = Convert.ToInt32(textBoxSum.Text)
                 });
-                MessageBox.Show("Сохранение прошло успешно", "Сообщение", MessageBoxButton.OK, MessageBoxImage.Information);
-                DialogResult = true;
-                Close();
+                if (response.Result.IsSuccessStatusCode)
+                {
+                    MessageBox.Show("Сохранение прошло успешно", "Сообщение", MessageBoxButton.OK, MessageBoxImage.Information);
+                    DialogResult = true;
+                    Close();
+                }
+                else
+                {
+                    throw new Exception(APIClient.GetError(response));
+                }
             }
             catch (Exception ex)
             {

@@ -1,0 +1,51 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PizzeriaModel", "PizzeriaModel\PizzeriaModel.csproj", "{F2070E5D-63EA-4EB7-A5AF-70CCFF5CEFF6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PizzeriaService", "PizzeriaService\PizzeriaService.csproj", "{BDF68C57-006F-49BA-8EB9-68AD36907BF0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PizzeriaView", "PizzeriaView\PizzeriaView.csproj", "{67943795-57A7-4D6E-AA1E-CB0A8A8610A6}"
+EndProject
+<<<<<<< HEAD
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PizzeriaWpf", "PizzeriaWpf\PizzeriaWpf.csproj", "{04527C43-7279-4C54-94BE-E655F4108302}"
+=======
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PizzeriaRestApi", "PizzeriaRestApi\PizzeriaRestApi.csproj", "{4BFFCA04-D097-429F-9E92-37E2E71AC548}"
+>>>>>>> origin/DeskPizza13
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F2070E5D-63EA-4EB7-A5AF-70CCFF5CEFF6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F2070E5D-63EA-4EB7-A5AF-70CCFF5CEFF6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F2070E5D-63EA-4EB7-A5AF-70CCFF5CEFF6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F2070E5D-63EA-4EB7-A5AF-70CCFF5CEFF6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BDF68C57-006F-49BA-8EB9-68AD36907BF0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BDF68C57-006F-49BA-8EB9-68AD36907BF0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BDF68C57-006F-49BA-8EB9-68AD36907BF0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BDF68C57-006F-49BA-8EB9-68AD36907BF0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{67943795-57A7-4D6E-AA1E-CB0A8A8610A6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{67943795-57A7-4D6E-AA1E-CB0A8A8610A6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{67943795-57A7-4D6E-AA1E-CB0A8A8610A6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{67943795-57A7-4D6E-AA1E-CB0A8A8610A6}.Release|Any CPU.Build.0 = Release|Any CPU
+<<<<<<< HEAD
+		{04527C43-7279-4C54-94BE-E655F4108302}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{04527C43-7279-4C54-94BE-E655F4108302}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{04527C43-7279-4C54-94BE-E655F4108302}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{04527C43-7279-4C54-94BE-E655F4108302}.Release|Any CPU.Build.0 = Release|Any CPU
+=======
+		{4BFFCA04-D097-429F-9E92-37E2E71AC548}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4BFFCA04-D097-429F-9E92-37E2E71AC548}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4BFFCA04-D097-429F-9E92-37E2E71AC548}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4BFFCA04-D097-429F-9E92-37E2E71AC548}.Release|Any CPU.Build.0 = Release|Any CPU
+>>>>>>> origin/DeskPizza13
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

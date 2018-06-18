@@ -1,34 +1,21 @@
 ﻿using PizzeriaService.BindingModels;
-using PizzeriaService.Interfaces;
 using PizzeriaService.ViewModels;
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using Unity;
+using System.Net.Http;
 
 namespace PizzeriaView
 {
     public partial class FormIngredient : Form
     {
-        [Unity.Attributes.Dependency]
-        public new IUnityContainer Container { get; set; }
-
         public int Id { set { id = value; } }
-
-        private readonly IIngredientService service;
 
         private int? id;
 
-        public FormIngredient(IIngredientService service)
+        public FormIngredient()
         {
             InitializeComponent();
-            this.service = service;
         }
 
         private void FormIngredient_Load(object sender, EventArgs e)
@@ -37,10 +24,15 @@ namespace PizzeriaView
             {
                 try
                 {
-                    IngredientViewModel view = service.GetElement(id.Value);
-                    if (view != null)
+                    var response = APIClient.GetRequest("api/Ingredient/Get/" + id.Value);
+                    if (response.Result.IsSuccessStatusCode)
                     {
-                        textBoxName.Text = view.IngredientName;
+                        var Ingredient = APIClient.GetElement<IngredientViewModel>(response);
+                        textBoxName.Text = Ingredient.IngredientName;
+                    }
+                    else
+                    {
+                        throw new Exception(APIClient.GetError(response));
                     }
                 }
                 catch (Exception ex)
@@ -59,9 +51,10 @@ namespace PizzeriaView
             }
             try
             {
+                Task<HttpResponseMessage> response;
                 if (id.HasValue)
                 {
-                    service.UpdElement(new IngredientBindingModel
+                    response = APIClient.PostRequest("api/Ingredient/UpdElement", new IngredientBindingModel
                     {
                         Id = id.Value,
                         IngredientName = textBoxName.Text
@@ -69,14 +62,21 @@ namespace PizzeriaView
                 }
                 else
                 {
-                    service.AddElement(new IngredientBindingModel
+                    response = APIClient.PostRequest("api/Ingredient/AddElement", new IngredientBindingModel
                     {
                         IngredientName = textBoxName.Text
                     });
                 }
-                MessageBox.Show("Сохранение прошло успешно", "Сообщение", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                DialogResult = DialogResult.OK;
-                Close();
+                if (response.Result.IsSuccessStatusCode)
+                {
+                    MessageBox.Show("Сохранение прошло успешно", "Сообщение", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    DialogResult = DialogResult.OK;
+                    Close();
+                }
+                else
+                {
+                    throw new Exception(APIClient.GetError(response));
+                }
             }
             catch (Exception ex)
             {

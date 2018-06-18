@@ -1,63 +1,16 @@
 ﻿using PizzeriaService.BindingModels;
-using PizzeriaService.Interfaces;
 using PizzeriaService.ViewModels;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
-using Unity;
 
 namespace PizzeriaView
 {
     public partial class FormOrderPizza : Form
     {
-        [Unity.Attributes.Dependency]
-        public new IUnityContainer Container { get; set; }
-
-        private readonly IVisitorService serviceV;
-
-        private readonly IPizzaService serviceP;
-
-        private readonly IMainService serviceM;
-
-        public FormOrderPizza(IVisitorService serviceV, IPizzaService serviceP, IMainService serviceM)
+        public FormOrderPizza()
         {
             InitializeComponent();
-            this.serviceV = serviceV;
-            this.serviceP = serviceP;
-            this.serviceM = serviceM;
-        }
-
-        private void FormOrderPizza_Load(object sender, EventArgs e)
-        {
-            try
-            {
-                List<VisitorViewModel> listC = serviceV.GetList();
-                if (listC != null)
-                {
-                    comboBoxVisitor.DisplayMember = "VisitorFIO";
-                    comboBoxVisitor.ValueMember = "Id";
-                    comboBoxVisitor.DataSource = listC;
-                    comboBoxVisitor.SelectedItem = null;
-                }
-                List<PizzaViewModel> listP = serviceP.GetList();
-                if (listP != null)
-                {
-                    comboBoxPizza.DisplayMember = "PizzaName";
-                    comboBoxPizza.ValueMember = "Id";
-                    comboBoxPizza.DataSource = listP;
-                    comboBoxPizza.SelectedItem = null;
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message, "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
         }
 
         private void CalcSum()
@@ -67,15 +20,33 @@ namespace PizzeriaView
                 try
                 {
                     int id = Convert.ToInt32(comboBoxPizza.SelectedValue);
-                    PizzaViewModel pizza = serviceP.GetElement(id);
-                    int count = Convert.ToInt32(textBoxCount.Text);
-                    textBoxSum.Text = (count * pizza.Price).ToString();
+                    var responseP = APIClient.GetRequest("api/Pizza/Get/" + id);
+                    if (responseP.Result.IsSuccessStatusCode)
+                    {
+                        PizzaViewModel Pizza = APIClient.GetElement<PizzaViewModel>(responseP);
+                        int count = Convert.ToInt32(textBoxCount.Text);
+                        textBoxSum.Text = (count * (int)Pizza.Price).ToString();
+                    }
+                    else
+                    {
+                        throw new Exception(APIClient.GetError(responseP));
+                    }
                 }
                 catch (Exception ex)
                 {
                     MessageBox.Show(ex.Message, "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
+        }
+
+        private void textBoxCount_TextChanged(object sender, EventArgs e)
+        {
+            CalcSum();
+        }
+
+        private void comboBoxPizza_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            CalcSum();
         }
 
         private void buttonSave_Click(object sender, EventArgs e)
@@ -87,26 +58,33 @@ namespace PizzeriaView
             }
             if (comboBoxVisitor.SelectedValue == null)
             {
-                MessageBox.Show("Выберите посетителя", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Выберите клиента", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
             if (comboBoxPizza.SelectedValue == null)
             {
-                MessageBox.Show("Выберите пиццу", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Выберите изделие", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
             try
             {
-                serviceM.CreateOrderPizza(new OrderPizzaBindingModel
+                var response = APIClient.PostRequest("api/Main/CreateOrderPizza", new OrderPizzaBindingModel
                 {
                     VisitorId = Convert.ToInt32(comboBoxVisitor.SelectedValue),
                     PizzaId = Convert.ToInt32(comboBoxPizza.SelectedValue),
                     Count = Convert.ToInt32(textBoxCount.Text),
                     Sum = Convert.ToInt32(textBoxSum.Text)
                 });
-                MessageBox.Show("Сохранение прошло успешно", "Сообщение", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                DialogResult = DialogResult.OK;
-                Close();
+                if (response.Result.IsSuccessStatusCode)
+                {
+                    MessageBox.Show("Сохранение прошло успешно", "Сообщение", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    DialogResult = DialogResult.OK;
+                    Close();
+                }
+                else
+                {
+                    throw new Exception(APIClient.GetError(response));
+                }
             }
             catch (Exception ex)
             {
@@ -120,14 +98,47 @@ namespace PizzeriaView
             Close();
         }
 
-        private void comboBoxPizza_SelectedIndexChanged(object sender, EventArgs e)
+        private void FormOrderPizza_Load(object sender, EventArgs e)
         {
-            CalcSum();
-        }
-
-        private void textBoxCount_TextChanged(object sender, EventArgs e)
-        {
-            CalcSum();
+            try
+            {
+                var responseC = APIClient.GetRequest("api/Visitor/GetList");
+                if (responseC.Result.IsSuccessStatusCode)
+                {
+                    List<VisitorViewModel> list = APIClient.GetElement<List<VisitorViewModel>>(responseC);
+                    if (list != null)
+                    {
+                        comboBoxVisitor.DisplayMember = "VisitorFIO";
+                        comboBoxVisitor.ValueMember = "Id";
+                        comboBoxVisitor.DataSource = list;
+                        comboBoxVisitor.SelectedItem = null;
+                    }
+                }
+                else
+                {
+                    throw new Exception(APIClient.GetError(responseC));
+                }
+                var responseP = APIClient.GetRequest("api/Pizza/GetList");
+                if (responseP.Result.IsSuccessStatusCode)
+                {
+                    List<PizzaViewModel> list = APIClient.GetElement<List<PizzaViewModel>>(responseP);
+                    if (list != null)
+                    {
+                        comboBoxPizza.DisplayMember = "PizzaName";
+                        comboBoxPizza.ValueMember = "Id";
+                        comboBoxPizza.DataSource = list;
+                        comboBoxPizza.SelectedItem = null;
+                    }
+                }
+                else
+                {
+                    throw new Exception(APIClient.GetError(responseP));
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
     }
 }

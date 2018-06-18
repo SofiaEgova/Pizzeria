@@ -4,6 +4,7 @@ using PizzeriaService.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -14,7 +15,6 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
-using Unity;
 
 namespace PizzeriaWpf
 {
@@ -23,20 +23,13 @@ namespace PizzeriaWpf
     /// </summary>
     public partial class VisitorWindow : Window
     {
-
-        [Unity.Attributes.Dependency]
-        public IUnityContainer Container { get; set; }
-
         public int Id { set { id = value; } }
-
-        private readonly IVisitorService service;
 
         private int? id;
 
-        public VisitorWindow(IVisitorService service)
+        public VisitorWindow()
         {
             InitializeComponent();
-            this.service = service;
             Loaded += VisitorWindow_Load;
         }
 
@@ -46,10 +39,15 @@ namespace PizzeriaWpf
             {
                 try
                 {
-                    VisitorViewModel view = service.GetElement(id.Value);
-                    if (view != null)
+                    var response = APIClient.GetRequest("api/Visitor/Get/" + id.Value);
+                    if (response.Result.IsSuccessStatusCode)
                     {
-                        textBoxFIO.Text = view.VisitorFIO;
+                        var client = APIClient.GetElement<VisitorViewModel>(response);
+                        textBoxFIO.Text = client.VisitorFIO;
+                    }
+                    else
+                    {
+                        throw new Exception(APIClient.GetError(response));
                     }
                 }
                 catch (Exception ex)
@@ -68,9 +66,10 @@ namespace PizzeriaWpf
             }
             try
             {
+                Task<HttpResponseMessage> response;
                 if (id.HasValue)
                 {
-                    service.UpdElement(new VisitorBindingModel
+                    response = APIClient.PostRequest("api/Visitor/UpdElement", new VisitorBindingModel
                     {
                         Id = id.Value,
                         VisitorFIO = textBoxFIO.Text
@@ -78,14 +77,21 @@ namespace PizzeriaWpf
                 }
                 else
                 {
-                    service.AddElement(new VisitorBindingModel
+                    response = APIClient.PostRequest("api/Visitor/AddElement", new VisitorBindingModel
                     {
                         VisitorFIO = textBoxFIO.Text
                     });
                 }
-                MessageBox.Show("Сохранение прошло успешно", "Сообщение", MessageBoxButton.OK, MessageBoxImage.Information);
-                DialogResult = true;
-                Close();
+                if (response.Result.IsSuccessStatusCode)
+                {
+                    MessageBox.Show("Сохранение прошло успешно", "Сообщение", MessageBoxButton.OK, MessageBoxImage.Information);
+                    DialogResult = true;
+                    Close();
+                }
+                else
+                {
+                    throw new Exception(APIClient.GetError(response));
+                }
             }
             catch (Exception ex)
             {

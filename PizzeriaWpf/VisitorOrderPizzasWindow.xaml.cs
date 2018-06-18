@@ -1,6 +1,7 @@
 ﻿using Microsoft.Win32;
 using PizzeriaService.BindingModels;
 using PizzeriaService.Interfaces;
+using PizzeriaService.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,8 +15,6 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
-using Unity;
-using Unity.Attributes;
 
 namespace PizzeriaWpf
 {
@@ -25,17 +24,11 @@ namespace PizzeriaWpf
     public partial class VisitorOrderPizzasWindow : Window
     {
 
-        [Dependency]
-        public IUnityContainer Container { get; set; }
-
-        private readonly IReportService service;
-
         private bool _isReportViewerLoaded;
 
-        public VisitorOrderPizzasWindow(IReportService service)
+        public VisitorOrderPizzasWindow()
         {
             InitializeComponent();
-            this.service = service;
             _reportViewer.Load += ReportViewer_Load;
         }
 
@@ -72,14 +65,21 @@ namespace PizzeriaWpf
                                             " по " + dateTimePickerTo.SelectedDate.ToString());
                 _reportViewer.LocalReport.SetParameters(parameter);
 
-                var dataSource = service.GetVisitorOrderPizzas(new ReportBindingModel
+                var response = APIClient.PostRequest("api/Report/GetVisitorOrderPizzas", new ReportBindingModel
                 {
                     DateFrom = dateTimePickerFrom.SelectedDate,
                     DateTo = dateTimePickerTo.SelectedDate
                 });
-                Microsoft.Reporting.WinForms.ReportDataSource source = new
-                    Microsoft.Reporting.WinForms.ReportDataSource("DataSetOrderPizzas", dataSource);
-                _reportViewer.LocalReport.DataSources.Add(source);
+                if (response.Result.IsSuccessStatusCode)
+                {
+                    var dataSource = APIClient.GetElement<List<VisitorOrderPizzasModel>>(response);
+                    Microsoft.Reporting.WinForms.ReportDataSource source = new Microsoft.Reporting.WinForms.ReportDataSource("DataSetOrders", dataSource);
+                    _reportViewer.LocalReport.DataSources.Add(source);
+                }
+                else
+                {
+                    throw new Exception(APIClient.GetError(response));
+                }
 
                 _reportViewer.RefreshReport();
             }
@@ -105,13 +105,20 @@ namespace PizzeriaWpf
             {
                 try
                 {
-                    service.SaveVisitorOrderPizzas(new ReportBindingModel
+                    var response = APIClient.PostRequest("api/Report/SaveVisitorOrderPizzas", new ReportBindingModel
                     {
                         FileName = sfd.FileName,
                         DateFrom = dateTimePickerFrom.SelectedDate,
                         DateTo = dateTimePickerTo.SelectedDate
                     });
-                    MessageBox.Show("Выполнено", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+                    if (response.Result.IsSuccessStatusCode)
+                    {
+                        MessageBox.Show("Выполнено", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                    else
+                    {
+                        throw new Exception(APIClient.GetError(response));
+                    }
                 }
                 catch (Exception ex)
                 {

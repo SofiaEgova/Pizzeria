@@ -2,33 +2,25 @@
 using PizzeriaService.Interfaces;
 using PizzeriaService.ViewModels;
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using Unity;
+using System.Net.Http;
 
 namespace PizzeriaView
 {
     public partial class FormFridge : Form
     {
-        [Unity.Attributes.Dependency]
-        public new IUnityContainer Container { get; set; }
-
         public int Id { set { id = value; } }
-
-        private readonly IFridgeService service;
 
         private int? id;
 
-        public FormFridge(IFridgeService service)
+        public FormFridge()
         {
             InitializeComponent();
-            this.service = service;
         }
 
         private void FormFridge_Load(object sender, EventArgs e)
@@ -37,15 +29,20 @@ namespace PizzeriaView
             {
                 try
                 {
-                    FridgeViewModel view = service.GetElement(id.Value);
-                    if (view != null)
+                    var response = APIClient.GetRequest("api/Fridge/Get/" + id.Value);
+                    if (response.Result.IsSuccessStatusCode)
                     {
-                        textBoxName.Text = view.FridgeName;
-                        dataGridView.DataSource = view.FridgeIngredients;
+                        var Fridge = APIClient.GetElement<FridgeViewModel>(response);
+                        textBoxName.Text = Fridge.FridgeName;
+                        dataGridView.DataSource = Fridge.FridgeIngredients;
                         dataGridView.Columns[0].Visible = false;
                         dataGridView.Columns[1].Visible = false;
                         dataGridView.Columns[2].Visible = false;
                         dataGridView.Columns[3].AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+                    }
+                    else
+                    {
+                        throw new Exception(APIClient.GetError(response));
                     }
                 }
                 catch (Exception ex)
@@ -64,9 +61,10 @@ namespace PizzeriaView
             }
             try
             {
+                Task<HttpResponseMessage> response;
                 if (id.HasValue)
                 {
-                    service.UpdElement(new FridgeBindingModel
+                    response = APIClient.PostRequest("api/Fridge/UpdElement", new FridgeBindingModel
                     {
                         Id = id.Value,
                         FridgeName = textBoxName.Text
@@ -74,14 +72,21 @@ namespace PizzeriaView
                 }
                 else
                 {
-                    service.AddElement(new FridgeBindingModel
+                    response = APIClient.PostRequest("api/Fridge/AddElement", new FridgeBindingModel
                     {
                         FridgeName = textBoxName.Text
                     });
                 }
-                MessageBox.Show("Сохранение прошло успешно", "Сообщение", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                DialogResult = DialogResult.OK;
-                Close();
+                if (response.Result.IsSuccessStatusCode)
+                {
+                    MessageBox.Show("Сохранение прошло успешно", "Сообщение", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    DialogResult = DialogResult.OK;
+                    Close();
+                }
+                else
+                {
+                    throw new Exception(APIClient.GetError(response));
+                }
             }
             catch (Exception ex)
             {

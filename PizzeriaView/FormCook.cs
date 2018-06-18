@@ -7,40 +7,39 @@ using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using Unity;
 
 namespace PizzeriaView
 {
     public partial class FormCook : Form
     {
-        [Unity.Attributes.Dependency]
-        public new IUnityContainer Container { get; set; }
-
         public int Id { set { id = value; } }
-
-        private readonly ICookService service;
 
         private int? id;
 
-        public FormCook(ICookService service)
+        public FormCook()
         {
             InitializeComponent();
-            this.service = service;
         }
 
-        private void Cook_Load(object sender, EventArgs e)
+        private void FormCook_Load(object sender, EventArgs e)
         {
             if (id.HasValue)
             {
                 try
                 {
-                    CookViewModel view = service.GetElement(id.Value);
-                    if (view != null)
+                    var response = APIClient.GetRequest("api/Cook/Get/" + id.Value);
+                    if (response.Result.IsSuccessStatusCode)
                     {
-                        textBoxFIO.Text = view.CookFIO;
+                        var Cook = APIClient.GetElement<CookViewModel>(response);
+                        textBoxFIO.Text = Cook.CookFIO;
+                    }
+                    else
+                    {
+                        throw new Exception(APIClient.GetError(response));
                     }
                 }
                 catch (Exception ex)
@@ -59,9 +58,10 @@ namespace PizzeriaView
             }
             try
             {
+                Task<HttpResponseMessage> response;
                 if (id.HasValue)
                 {
-                    service.UpdElement(new CookBindingModel
+                    response = APIClient.PostRequest("api/Cook/UpdElement", new CookBindingModel
                     {
                         Id = id.Value,
                         CookFIO = textBoxFIO.Text
@@ -69,14 +69,21 @@ namespace PizzeriaView
                 }
                 else
                 {
-                    service.AddElement(new CookBindingModel
+                    response = APIClient.PostRequest("api/Cook/AddElement", new CookBindingModel
                     {
                         CookFIO = textBoxFIO.Text
                     });
                 }
-                MessageBox.Show("Сохранение прошло успешно", "Сообщение", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                DialogResult = DialogResult.OK;
-                Close();
+                if (response.Result.IsSuccessStatusCode)
+                {
+                    MessageBox.Show("Сохранение прошло успешно", "Сообщение", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    DialogResult = DialogResult.OK;
+                    Close();
+                }
+                else
+                {
+                    throw new Exception(APIClient.GetError(response));
+                }
             }
             catch (Exception ex)
             {
