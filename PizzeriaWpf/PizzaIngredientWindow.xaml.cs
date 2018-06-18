@@ -36,21 +36,17 @@ namespace PizzeriaWpf
         {
             try
             {
-                var response = APIClient.GetRequest("api/Ingredient/GetList");
-                if (response.Result.IsSuccessStatusCode)
-                {
                     comboBox.DisplayMemberPath = "IngredientName";
                     comboBox.SelectedValuePath = "Id";
-                    comboBox.ItemsSource = APIClient.GetElement<List<IngredientViewModel>>(response);
-                    comboBox.SelectedItem = null;
-                }
-                else
-                {
-                    throw new Exception(APIClient.GetError(response));
-                }
+                    comboBox.ItemsSource = Task.Run(() => APIClient.GetRequestData<List<IngredientViewModel>>("api/Ingredient/GetList")).Result;
+                comboBox.SelectedItem = null;
             }
             catch (Exception ex)
             {
+                while (ex.InnerException != null)
+                {
+                    ex = ex.InnerException;
+                }
                 MessageBox.Show(ex.Message, "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             if (model != null)
