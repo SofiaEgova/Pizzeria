@@ -1,4 +1,6 @@
-﻿using PizzeriaService.Interfaces;
+﻿using Microsoft.Win32;
+using PizzeriaService.BindingModels;
+using PizzeriaService.Interfaces;
 using PizzeriaService.ViewModels;
 using System;
 using System.Collections.Generic;
@@ -28,11 +30,14 @@ namespace PizzeriaWpf
         public IUnityContainer Container { get; set; }
 
         private readonly IMainService service;
-        
-        public MainWindow(IMainService service)
+
+        private readonly IReportService reportService;
+
+        public MainWindow(IMainService service, IReportService reportService)
         {
             InitializeComponent();
             this.service = service;
+            this.reportService = reportService;
         }
         
         private void LoadData()
@@ -147,6 +152,41 @@ namespace PizzeriaWpf
         private void buttonRef_Click(object sender, RoutedEventArgs e)
         {
             LoadData();
+        }
+
+        private void MenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            SaveFileDialog sfd = new SaveFileDialog
+            {
+                Filter = "doc|*.doc|docx|*.docx"
+            };
+            if (sfd.ShowDialog() == true)
+            {
+                try
+                {
+                    reportService.SavePizzaPrice(new ReportBindingModel
+                    {
+                        FileName = sfd.FileName
+                    });
+                    MessageBox.Show("Выполнено", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.Message, "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
+
+        private void MenuItem_Click_1(object sender, RoutedEventArgs e)
+        {
+            var form = Container.Resolve<FridgesLoadWindow>();
+            form.ShowDialog();
+        }
+
+        private void MenuItem_Click_2(object sender, RoutedEventArgs e)
+        {
+            var form = Container.Resolve<VisitorOrderPizzasWindow>();
+            form.ShowDialog();
         }
     }
 }

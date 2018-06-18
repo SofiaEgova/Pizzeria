@@ -42,6 +42,10 @@
             this.buttonTakeOrderInWork = new System.Windows.Forms.Button();
             this.buttonOrderPizza = new System.Windows.Forms.Button();
             this.dataGridView = new System.Windows.Forms.DataGridView();
+            this.отчетыToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.прайсПиццToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.загруженностьХолодильниковToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.заказToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView)).BeginInit();
             this.SuspendLayout();
@@ -50,7 +54,8 @@
             // 
             this.menuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.справочникиToolStripMenuItem,
-            this.пополнитьХолодильникToolStripMenuItem});
+            this.пополнитьХолодильникToolStripMenuItem,
+            this.отчетыToolStripMenuItem});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
             this.menuStrip1.Size = new System.Drawing.Size(931, 24);
@@ -170,6 +175,37 @@
             this.dataGridView.Size = new System.Drawing.Size(737, 317);
             this.dataGridView.TabIndex = 11;
             // 
+            // отчетыToolStripMenuItem
+            // 
+            this.отчетыToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.прайсПиццToolStripMenuItem,
+            this.загруженностьХолодильниковToolStripMenuItem,
+            this.заказToolStripMenuItem});
+            this.отчетыToolStripMenuItem.Name = "отчетыToolStripMenuItem";
+            this.отчетыToolStripMenuItem.Size = new System.Drawing.Size(60, 20);
+            this.отчетыToolStripMenuItem.Text = "Отчеты";
+            // 
+            // прайсПиццToolStripMenuItem
+            // 
+            this.прайсПиццToolStripMenuItem.Name = "прайсПиццToolStripMenuItem";
+            this.прайсПиццToolStripMenuItem.Size = new System.Drawing.Size(246, 22);
+            this.прайсПиццToolStripMenuItem.Text = "Прайс пицц";
+            this.прайсПиццToolStripMenuItem.Click += new System.EventHandler(this.прайсПиццToolStripMenuItem_Click);
+            // 
+            // загруженностьХолодильниковToolStripMenuItem
+            // 
+            this.загруженностьХолодильниковToolStripMenuItem.Name = "загруженностьХолодильниковToolStripMenuItem";
+            this.загруженностьХолодильниковToolStripMenuItem.Size = new System.Drawing.Size(246, 22);
+            this.загруженностьХолодильниковToolStripMenuItem.Text = "Загруженность холодильников";
+            this.загруженностьХолодильниковToolStripMenuItem.Click += new System.EventHandler(this.загруженностьХолодильниковToolStripMenuItem_Click);
+            // 
+            // заказToolStripMenuItem
+            // 
+            this.заказToolStripMenuItem.Name = "заказToolStripMenuItem";
+            this.заказToolStripMenuItem.Size = new System.Drawing.Size(246, 22);
+            this.заказToolStripMenuItem.Text = "Заказы посетителей";
+            this.заказToolStripMenuItem.Click += new System.EventHandler(this.заказToolStripMenuItem_Click);
+            // 
             // FormMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -209,5 +245,9 @@
         private System.Windows.Forms.Button buttonTakeOrderInWork;
         private System.Windows.Forms.Button buttonOrderPizza;
         private System.Windows.Forms.DataGridView dataGridView;
+        private System.Windows.Forms.ToolStripMenuItem отчетыToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem прайсПиццToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem загруженностьХолодильниковToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem заказToolStripMenuItem;
     }
 }
