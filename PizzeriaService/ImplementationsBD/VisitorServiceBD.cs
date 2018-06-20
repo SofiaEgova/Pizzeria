@@ -41,7 +41,17 @@ namespace PizzeriaService.ImplementationsBD
                 {
                     Id = element.Id,
                     VisitorFIO = element.VisitorFIO,
-                    Mail = element.Mail
+                    Mail = element.Mail,
+                    Messages = context.MessageInfos
+                            .Where(recM => recM.VisitorId == element.Id)
+                            .Select(recM => new MessageInfoViewModel
+                            {
+                                MessageId = recM.MessageId,
+                                DateDelivery = recM.DateDelivery,
+                                Subject = recM.Subject,
+                                Body = recM.Body
+                            })
+                            .ToList()
                 };
             }
             throw new Exception("Элемент не найден");

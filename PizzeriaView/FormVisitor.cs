@@ -18,7 +18,6 @@ namespace PizzeriaView
 {
     public partial class FormVisitor : Form
     {
-
         public int Id { set { id = value; } }
 
         private int? id;
