@@ -1,4 +1,5 @@
-﻿using PizzeriaService.BindingModels;
+﻿using PizzeriaRestApi.Services;
+using PizzeriaService.BindingModels;
 using PizzeriaService.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -57,6 +58,18 @@ namespace PizzeriaRestApi.Controllers
         public void PutIngredientInFridge(FridgeIngredientBindingModel model)
         {
             _service.PutIngredientInFridge(model);
+        }
+
+        [HttpGet]
+        public IHttpActionResult GetInfo()
+        {
+            ReflectionService service = new ReflectionService();
+            var list = service.GetInfoByAssembly();
+            if (list == null)
+            {
+                InternalServerError(new Exception("Нет данных"));
+            }
+            return Ok(list);
         }
     }
 }
