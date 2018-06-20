@@ -35,6 +35,8 @@ namespace PizzeriaService
 
         public virtual DbSet<FridgeIngredient> FridgeIngredients { get; set; }
 
+        public virtual DbSet<MessageInfo> MessageInfos { get; set; }
+
         /// <summary>
         /// Перегружаем метод созранения изменений. Если возникла ошибка - очищаем все изменения
         /// </summary>

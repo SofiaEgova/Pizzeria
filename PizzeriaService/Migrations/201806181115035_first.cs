@@ -3,7 +3,7 @@ namespace PizzeriaService.Migrations
     using System;
     using System.Data.Entity.Migrations;
     
-    public partial class FirstMigration : DbMigration
+    public partial class first : DbMigration
     {
         public override void Up()
         {
@@ -101,14 +101,32 @@ namespace PizzeriaService.Migrations
                 c => new
                     {
                         Id = c.Int(nullable: false, identity: true),
+                        Mail = c.String(),
                         VisitorFIO = c.String(nullable: false),
                     })
                 .PrimaryKey(t => t.Id);
+            
+            CreateTable(
+                "dbo.MessageInfoes",
+                c => new
+                    {
+                        Id = c.Int(nullable: false, identity: true),
+                        MessageId = c.String(),
+                        FromMailAddress = c.String(),
+                        Subject = c.String(),
+                        Body = c.String(),
+                        DateDelivery = c.DateTime(nullable: false),
+                        VisitorId = c.Int(),
+                    })
+                .PrimaryKey(t => t.Id)
+                .ForeignKey("dbo.Visitors", t => t.VisitorId)
+                .Index(t => t.VisitorId);
             
         }
         
         public override void Down()
         {
+            DropForeignKey("dbo.MessageInfoes", "VisitorId", "dbo.Visitors");
             DropForeignKey("dbo.OrderPizzas", "VisitorId", "dbo.Visitors");
             DropForeignKey("dbo.PizzaIngredients", "PizzaId", "dbo.Pizzas");
             DropForeignKey("dbo.PizzaIngredients", "IngredientId", "dbo.Ingredients");
@@ -116,6 +134,7 @@ namespace PizzeriaService.Migrations
             DropForeignKey("dbo.FridgeIngredients", "FridgeId", "dbo.Fridges");
             DropForeignKey("dbo.OrderPizzas", "PizzaId", "dbo.Pizzas");
             DropForeignKey("dbo.OrderPizzas", "CookId", "dbo.Cooks");
+            DropIndex("dbo.MessageInfoes", new[] { "VisitorId" });
             DropIndex("dbo.FridgeIngredients", new[] { "IngredientId" });
             DropIndex("dbo.FridgeIngredients", new[] { "FridgeId" });
             DropIndex("dbo.PizzaIngredients", new[] { "IngredientId" });
@@ -123,6 +142,7 @@ namespace PizzeriaService.Migrations
             DropIndex("dbo.OrderPizzas", new[] { "CookId" });
             DropIndex("dbo.OrderPizzas", new[] { "PizzaId" });
             DropIndex("dbo.OrderPizzas", new[] { "VisitorId" });
+            DropTable("dbo.MessageInfoes");
             DropTable("dbo.Visitors");
             DropTable("dbo.Fridges");
             DropTable("dbo.FridgeIngredients");
